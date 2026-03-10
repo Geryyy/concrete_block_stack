@@ -1,5 +1,73 @@
 # Concrete Block Assembly Context
 
+## Resume Snapshot (2026-03-10)
+
+This is the latest working state before Docker rebuild.
+
+### What was changed in this session
+
+1. Concrete block visibility in Gazebo
+- Kept block visual as simple neon/orange box for reliability (mesh visualization deferred).
+- Model exists/spawns as `concrete_block_1`.
+
+2. Move-empty RViz interaction (new stack)
+- Added `rviz_move_empty_interface.py` in `concrete_block_motion_planning`.
+- Flow on goal click: `plan_geometric_path -> compute_trajectory -> execute_trajectory`.
+- Added arming topic `/cb_move_empty/enable` to mimic old UX:
+  - press Move button first (arm), then click RViz goal.
+- Added fallback for missing geometric backend (`fcl`):
+  - if geometric planning unavailable, compute trajectory using direct start/goal path.
+
+3. Execution path to controller
+- `execute_trajectory` now supports optional dispatch when enabled:
+  - `execution.enabled`
+  - `execution.trajectory_topic` (default `/trajectory_controllers/joint_trajectory`)
+- Exposed in sim launch:
+  - `cbmp_execution_enabled`
+  - `cbmp_execution_topic`
+
+4. RViz panel compatibility bridge
+- Patched existing `behavior_tree_panel` (outside concrete_block_stack) so Move/Cancel publish:
+  - `/cb_move_empty/enable` true/false
+- Fallback behavior preserved:
+  - if no bridge subscriber exists, panel keeps legacy `move_empty.xml` behavior.
+- Added `BehaviorTreePanel` to `concrete_bt.rviz`.
+
+5. BT startup stability
+- Added small delay before `lifecycle_manager` in `concrete_block_behavior_tree/launch/bt.launch.py`
+  to reduce configure race on startup.
+
+6. Dependency robustness (`fcl`)
+- Added `python-fcl` to:
+  - `concrete_block_motion_planning/requirements-core.txt`
+  - `concrete_block_motion_planning/pyproject.toml`
+- Added dependency note in `concrete_block_motion_planning/VENDOR_README.md`.
+- Installed `python-fcl` in current container for immediate test.
+
+7. Docker build robustness
+- Updated `.devcontainer/Dockerfile.vscode` to install CBMP runtime deps at image build:
+  - `libfcl-dev`, `python-fcl`, and core Python stack.
+- This is the main fix so fresh containers have geometric runtime ready.
+
+### Recommended post-rebuild validation
+
+1. Rebuild/reopen container, then:
+- `source /opt/ros/humble/setup.bash`
+- `source /workspaces/ros2_baustelle_ws/install/setup.bash`
+
+2. Launch:
+- `ros2 launch concrete_block_behavior_tree sim_wall_build.launch.py cbmp_execution_enabled:=True`
+
+3. In RViz:
+- Open `BehaviorTreePanel`.
+- Press `Move` once (arms move-empty interface).
+- Use `SetGoal` tool on `/goal_pose`.
+
+4. Expected logs:
+- `rviz_move_empty_interface`: `Move-empty interface ENABLED.`
+- then `Move-empty request ...`
+- then either normal geometric planning path or fallback direct-path path (if geometric backend unavailable).
+
 ## Simulation Roadmap
 - Detailed roadmap: `docs/simulation_roadmap.md`
 - Active phase: Phase 1 (in progress)
