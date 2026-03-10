@@ -7,6 +7,12 @@
 - Execution strategy: dry-run first, MPC integration after stable BT+planning loop
 - Parallelization: Agent A (Sim/BT/Execution), Agent B (Perception/Validation/Docs)
 
+## Repository Setup
+- Multi-repo manifest: `concrete_block_stack.repos`
+- Import/update command:
+  - `vcs import . < concrete_block_stack.repos`
+  - `vcs pull .`
+
 ## Goal
 Build an integrated ROS 2 stack for autonomous concrete block assembly with three coordinated pillars:
 - Perception
