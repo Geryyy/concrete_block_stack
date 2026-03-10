@@ -2,10 +2,13 @@
 
 ## Simulation Roadmap
 - Detailed roadmap: `docs/simulation_roadmap.md`
-- Active phase: Phase 0
+- Active phase: Phase 1 (in progress)
 - Base strategy: Timber sim as bootstrap
 - Execution strategy: dry-run first, MPC integration after stable BT+planning loop
 - Parallelization: Agent A (Sim/BT/Execution), Agent B (Perception/Validation/Docs)
+- Canonical launch (phase-1 baseline):
+  - `ros2 launch concrete_block_behavior_tree sim_wall_build.launch.py`
+  - with perception enabled: `ros2 launch concrete_block_behavior_tree sim_wall_build.launch.py use_perception:=True`
 
 ## Repository Setup
 - Multi-repo manifest: `concrete_block_stack.repos`

@@ -9,6 +9,13 @@ The strategy is intentionally staged:
 - Stabilize motion planning and execution interfaces in simulation.
 - Integrate behavior-tree orchestration and perception for end-to-end wall-building loops.
 
+## Status
+- Current phase: **Phase 1 (in progress)**
+- Implemented baseline entrypoint:
+  - `ros2 launch concrete_block_behavior_tree sim_wall_build.launch.py`
+  - Optional perception bringup:
+    - `ros2 launch concrete_block_behavior_tree sim_wall_build.launch.py use_perception:=True`
+
 ## Current State (Exists vs Missing)
 
 ### Exists
@@ -38,6 +45,8 @@ The strategy is intentionally staged:
 - Use timber Gazebo bringup as bootstrap.
 - Launch BT + planning + sim with dry-run trajectory execution.
 - Validate discovery -> plan -> trajectory compute loop.
+- Implementation status:
+  - `sim_wall_build.launch.py` added as canonical launch entrypoint in `concrete_block_behavior_tree/launch`.
 
 ### Phase 2: Concrete block spawning
 - Add concrete block spawn presets (`single_block`, `wall_3_2_seed`).
