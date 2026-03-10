@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>concrete_block_registration_teaser</name>
+  <version>0.1.0</version>
+  <description>TEASER++ registration backend node for concrete block perception.</description>
+
+  <maintainer email="gerald.ebmer.fl@ait.ac.at">vscode</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclcpp_action</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>vision_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>cv_bridge</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_geometry_msgs</depend>
+  <depend>concrete_block_perception</depend>
+
+  <exec_depend>ros2_yolos_cpp</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
