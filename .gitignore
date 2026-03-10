@@ -1,0 +1,9 @@
+# keep package repos managed independently
+/concrete_block_behavior_tree/
+/concrete_block_motion_planning/
+/concrete_block_perception/
+/ros2_yolos_cpp/
+
+# local/editor noise
+.DS_Store
+.vscode/
