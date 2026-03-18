@@ -130,12 +130,13 @@ Validated in this session:
 - document exact environment requirements such as `python3 -m pytest` instead of assuming `pytest`
 
 ### Phase 2. Planner-only commissioning
-- use `sim_wall_build_smoke.launch.py` as the fast baseline
+- use `sim_wall_build_smoke.launch.py` as the fast planner/simulation smoke baseline
 - validate named scan configurations and planner service availability
 - verify geometric planning, trajectory computation, and dry-run execution first
 - then verify non-dry-run execution to the active trajectory consumer
 
 ### Phase 3. Perception commissioning
+- use `scan_sequence_smoke.launch.py` as the perception scan smoke entrypoint
 - commission `SCENE_DISCOVERY` with fixed scan viewpoints
 - define expected world-model results after each scan
 - commission `REFINE_BLOCK`
@@ -173,7 +174,7 @@ Validated in this session:
 ### Automated tests
 - keep motion-planning unit/integration tests as the fast regression baseline
 - add tests for wall-plan execution assumptions where feasible
-- add smoke checks for configuration files and BT config references
+- add smoke checks for configuration files, BT config references, and smoke/default launch separation
 
 ### Manual subsystem tests
 - perception:
@@ -233,9 +234,9 @@ Validated in this session:
 - collect failure cases before expanding complexity
 
 ## Suggested Near-Term Priorities
-1. Keep `sim_wall_build_smoke.launch.py` as the main fast commissioning entrypoint.
+1. Keep `sim_wall_build_smoke.launch.py` as the main fast planner/simulation smoke entrypoint.
 2. Prove the non-dry-run planner execution path in Gazebo.
-3. Commission scene scanning and world-model updates from fixed viewpoints.
+3. Commission scene scanning and world-model updates from fixed viewpoints through `scan_sequence_smoke.launch.py`.
 4. Validate one full single-block assembly cycle before attempting a full wall.
 5. Only after that, refine the BT authoring workflow and user guide.
 

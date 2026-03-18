@@ -90,7 +90,8 @@ Current repository state already contains:
 - BT plugins for the main planner/perception services
 - a default wall-build tree in `behavior_trees/concrete_block_assembly.xml`
 - scan and recovery subtrees
-- simulation launch entrypoints for smoke and fuller runs
+- simulation launch entrypoints for planner/simulation smoke and fuller runs
+- looped task execution with world-model status updates after placement
 
 Useful current references:
 - `concrete_block_behavior_tree/doc/BEHAVIOR_TREES.md`
@@ -110,6 +111,8 @@ In other words:
 - the architecture is present
 - important service interfaces are present
 - test coverage exists mainly on the motion-planning side
+- the BT loop and world-model task-status update path are implemented
+- real gripper control is still stubbed, so full pick/place semantics are not yet commissioned
 - end-to-end commissioning is still the key gap
 
 ## Current Simulation Entry Points
@@ -117,6 +120,7 @@ Main launch flows:
 - `concrete_block_behavior_tree/launch/sim_wall_build.launch.py`
 - `concrete_block_behavior_tree/launch/sim_wall_build_smoke.launch.py`
 - `concrete_block_behavior_tree/launch/sim_wall_build_full.launch.py`
+- `concrete_block_behavior_tree/launch/scan_sequence_smoke.launch.py`
 
 Current bringup understanding:
 - crane description comes from `epsilon_crane_description`
@@ -126,6 +130,8 @@ Current bringup understanding:
 - motion planning is included from `concrete_block_motion_planning`
 - perception is optional in the simulation launch
 - RViz can be started from the same launch flow
+- `sim_wall_build_smoke.launch.py` is a planner/simulation smoke profile and intentionally uses the dummy BT path
+- `scan_sequence_smoke.launch.py` is the perception-backed scan commissioning profile
 
 ## What This Document Is For
 This file should remain a short orientation document:
