@@ -131,7 +131,8 @@ Current bringup understanding:
 - perception is optional in the simulation launch
 - RViz can be started from the same launch flow
 - `sim_wall_build_smoke.launch.py` is a planner/simulation smoke profile and intentionally uses the dummy BT path
-- `scan_sequence_smoke.launch.py` is the perception-backed scan commissioning profile
+- `Single block plan` is the canonical seeded-world-model commissioning task
+- `scan_sequence_smoke.launch.py` remains only as a legacy alias while the BT/operator surface is being simplified
 
 ## What This Document Is For
 This file should remain a short orientation document:

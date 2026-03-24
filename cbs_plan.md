@@ -136,7 +136,7 @@ Validated in this session:
 - then verify non-dry-run execution to the active trajectory consumer
 
 ### Phase 3. Perception commissioning
-- use `scan_sequence_smoke.launch.py` as the perception scan smoke entrypoint
+- use `scan_sequence_smoke.launch.py` only as a legacy alias while perception commissioning still needs a dedicated entrypoint
 - commission `SCENE_DISCOVERY` with fixed scan viewpoints
 - define expected world-model results after each scan
 - commission `REFINE_BLOCK`
@@ -147,6 +147,8 @@ Validated in this session:
 - verify planner requests with `use_world_model=true`
 - confirm `get_coarse_blocks` data is sufficient for obstacle-aware planning
 - validate at least one pickup-to-placement planning flow against current block state
+- use `single_block_plan.xml` as the canonical planner/world-model commissioning BT
+- keep `scan_sequence_smoke.launch.py` only as a legacy alias during the transition
 
 ### Phase 5. BT subsystem integration
 - run scan subtree with live planner + perception services
