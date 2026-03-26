@@ -1,155 +1,176 @@
 # Concrete Block Stack Task Context
 
 ## Purpose
-This workspace extends the timber-crane stack toward a new use case:
 
-Build a wall of concrete blocks with the timber crane using the `PZS100` parallel gripper.
+This workspace extends the timber-crane stack toward concrete-block experiments with the `PZS100` gripper.
 
-The concrete-block work lives under `src/concrete_block_stack/`.
+The concrete-block work lives under:
 
-## Main Goal
-The target experiment is an end-to-end wall-building workflow:
+- `src/concrete_block_stack/`
 
-1. Move the crane to scan viewpoints.
-2. Detect and register concrete blocks.
-3. Store block poses and task state in a persistent world model.
-4. Select the next wall-assembly task from a wall plan.
-5. Plan transport and placement motion for the selected block.
-6. Execute the motion in simulation first, then on hardware later.
-7. Repeat until the wall is complete.
+## Current commissioning model
 
-The intended orchestration layer is a behavior tree so that experiments such as wall building can later be configured and modified without changing core motion-planning or perception code.
+The near-term operating model is manual, task-oriented commissioning rather than one large automatic wall-building BT.
 
-## System Pillars
+Canonical operator tasks:
 
-### 1. Perception
-`concrete_block_perception`
+- `Move empty`
+- `Single block plan`
+- `Single block execute`
 
-Current perception architecture already supports BT-friendly one-shot calls through `world_model_node`:
-- `SCENE_DISCOVERY`
-- `REFINE_BLOCK`
-- `REFINE_GRASPED`
+This keeps commissioning fast and observable:
 
-Perception responsibilities:
-- block detection and segmentation
-- coarse and refined block pose estimation
-- world-model maintenance
-- block task-state handling such as `TASK_MOVE` / `TASK_PLACED`
+- plan only when we want to inspect world-model and planner behavior
+- approval-gated execute when we want to test the live motion path
 
-Validation strategy:
-- mainly rosbag-based and commissioning-launch based
-- visualization through RViz markers and debug topics
+## Package roles
 
-Useful current references:
-- `concrete_block_perception/README_PERCEPTION_MODES.md`
-- `concrete_block_perception/docs/vision_pipeline_modes.md`
-- `concrete_block_perception/docs/marker_color_coding.md`
+### `concrete_block_perception`
 
-### 2. Motion Planning
-`concrete_block_motion_planning`
+Owns the persistent world model and planning scene.
 
-The planner is already structured as a two-stage pipeline:
-- geometric Cartesian path planning
-- joint-space trajectory generation / optimization
+Current important interfaces:
 
-Current exposed services:
-- `plan_geometric_path`
-- `compute_trajectory`
+- `get_coarse_blocks`
+- `get_planning_scene`
+- `set_block_task_status`
+- `run_pose_estimation`
+
+Current commissioning reality:
+
+- seeded world-model startup is available
+- static `B0` seeding is in use
+- static planning-scene obstacles are now owned here as shared config
+- perception-driven scan/refine is not the active integration priority right now
+
+### `concrete_block_motion_planning`
+
+Owns the shared planner services.
+
+Current shared service surface:
+
 - `plan_and_compute_trajectory`
 - `execute_trajectory`
 - `execute_named_configuration`
 - `get_next_assembly_task`
 
-Important current characteristics:
-- wall-building progression is loaded from `motion_planning/data/wall_plans.yaml`
-- named crane poses are loaded from `config/named_configurations.yaml`
-- world-model-assisted planning is supported through `get_coarse_blocks`
-- execution can dispatch via topic or action, but still needs end-to-end validation in the active simulation setup
+Backend selection is launch/config driven:
 
-Validation strategy:
-- unit/integration tests for planner internals and services
-- Gazebo smoke tests for runtime bringup
+- `planner.backend:=timber`
+- `planner.backend:=concrete`
 
-Useful current references:
-- `concrete_block_motion_planning/doc/ARCHITECTURE.md`
-- `concrete_block_motion_planning/doc/SERVICES.md`
-- `concrete_block_motion_planning/launch/motion_planning.launch.py`
+Current reality:
 
-### 3. Sequencing / Behavior Trees
-`concrete_block_behavior_tree`
+- timber path is the validated planning/execution reference
+- concrete/CBS path is being brought online behind the same service contract
+- the centralized planning scene is now the intended source of truth for CBS/FCL collision queries
+- the concrete online trajectory stage is now being simplified to a fully actuated IK + TOPP-RA path-following pipeline
 
-Behavior trees are the intended orchestration mechanism for:
-- scene scanning
-- task acquisition from the wall plan
-- perception refinement
-- transport planning
-- trajectory execution
-- recovery behavior
+### `concrete_block_behavior_tree`
 
-Current repository state already contains:
-- BT plugins for the main planner/perception services
-- a default wall-build tree in `behavior_trees/concrete_block_assembly.xml`
-- scan and recovery subtrees
-- simulation launch entrypoints for planner/simulation smoke and fuller runs
-- looped task execution with world-model status updates after placement
+Owns the operator-facing commissioning tasks and the longer-term assembly orchestration.
 
-Useful current references:
-- `concrete_block_behavior_tree/doc/BEHAVIOR_TREES.md`
-- `concrete_block_behavior_tree/doc/GROOT.md`
-- `concrete_block_behavior_tree/launch/sim_wall_build.launch.py`
+Current BT panel surface should expose only:
 
-## Current Workspace Reality Check
-The goal is understandable and the current codebase already contains the major building blocks for the full framework:
-- perception services and world model
-- motion-planning services and wall-plan progression
-- behavior-tree plugins and XML trees
-- Gazebo/RViz simulation launch files
+- `Move empty`
+- `Single block plan`
+- `Single block execute`
 
-At the same time, the stack is not yet proven as a fully commissioned wall-building pipeline. The main remaining work is integration, staged validation, and reliable execution of the whole chain.
+Legacy scan-smoke naming remains only for compatibility and should not be treated as the primary commissioning surface.
 
-In other words:
-- the architecture is present
-- important service interfaces are present
-- test coverage exists mainly on the motion-planning side
-- the BT loop and world-model task-status update path are implemented
-- real gripper control is still stubbed, so full pick/place semantics are not yet commissioned
-- end-to-end commissioning is still the key gap
+## Current priorities
 
-## Current Simulation Entry Points
-Main launch flows:
-- `concrete_block_behavior_tree/launch/sim_wall_build.launch.py`
-- `concrete_block_behavior_tree/launch/sim_wall_build_smoke.launch.py`
-- `concrete_block_behavior_tree/launch/sim_wall_build_full.launch.py`
-- `concrete_block_behavior_tree/launch/scan_sequence_smoke.launch.py`
+1. Keep the validated timber execution path green.
+2. Use the standalone `motion_planning` lab as the primary development loop for CBS planner work.
+3. Fix solver/model consistency first, then improve the simplified joint-space planner.
+4. Keep `acados` and heavier trajectory optimizers in offline comparison mode until the lightweight stack is trustworthy.
+5. Return to perception-driven scan/refine integration only after the planner/world-model seam is stable again.
 
-Current bringup understanding:
-- crane description comes from `epsilon_crane_description`
-- the default tool is `pzs100_description`
-- Gazebo world comes from `testsite_description`
-- concrete blocks can be spawned directly from the simulation launch
-- motion planning is included from `concrete_block_motion_planning`
-- perception is optional in the simulation launch
-- RViz can be started from the same launch flow
-- `sim_wall_build_smoke.launch.py` is a planner/simulation smoke profile and intentionally uses the dummy BT path
-- `Single block plan` is the canonical seeded-world-model commissioning task
-- `scan_sequence_smoke.launch.py` remains only as a legacy alias while the BT/operator surface is being simplified
+## Short planner comparison
 
-## What This Document Is For
-This file should remain a short orientation document:
-- what the project is trying to achieve
-- which packages own which responsibilities
-- what is already present in the workspace
-- what still needs integration and commissioning
+### Timber / current reference
 
-Detailed implementation planning is tracked separately in:
+- direct A-to-B / iLQR-like runtime
+- fewer moving parts in the online path
+- currently best for live commissioning
+
+### CBS / staged concrete path
+
+- explicit geometric scene + FCL
+- cleaner architecture for centralized world-model obstacles
+- better long-term interchangeability
+- current online planner direction is:
+  - static/steady-state goal solve
+  - actuated joint-space path generation
+  - simple timing / TOPP-RA later if needed
+
+## Current planner development reality
+
+The active planner development surface is now the standalone lab under:
+
+- `src/concrete_block_stack/concrete_block_motion_planning/motion_planning/standalone/`
+- `src/concrete_block_stack/concrete_block_motion_planning/motion_planning_tools/standalone/run_planner_experiment.py`
+
+What is working:
+
+- standalone path-planning and solver comparison runs without ROS/Gazebo
+- matplotlib plotting of TCP path and joint path
+- overlay of real block scenes from the scenario library
+- a reachable scene-backed demo:
+  - `scene_demo_step_01_reachable`
+
+What is not solved yet:
+
+- raw scene tasks like `scene_step_01_first_on_ground` still expose solver limitations
+- `single_block_transfer` remains a real failing/planning-debug case
+- the CBS runtime is no longer the right place to invent planner logic; it should consume standalone-validated logic
+
+## Verified standalone commands
+
+Path + timing:
+
+```bash
+python3 src/concrete_block_stack/concrete_block_motion_planning/motion_planning_tools/standalone/run_planner_experiment.py \
+  --mode planner \
+  --stack joint_goal_interpolation \
+  --scenario scene_demo_step_01_reachable \
+  --timing simple \
+  --plot
+```
+
+Anchor planner:
+
+```bash
+python3 src/concrete_block_stack/concrete_block_motion_planning/motion_planning_tools/standalone/run_planner_experiment.py \
+  --mode planner \
+  --stack cartesian_anchor_joint_spline \
+  --scenario short_reachable_move
+```
+
+Solver comparison:
+
+```bash
+python3 src/concrete_block_stack/concrete_block_motion_planning/motion_planning_tools/standalone/run_planner_experiment.py \
+  --mode solver_compare \
+  --scenario short_reachable_move
+```
+
+## Handoff reference
+
+For the current planner-specific handoff, see:
+
+- `src/concrete_block_stack/concrete_block_motion_planning/doc/STANDALONE_PLANNER_HANDOFF.md`
+
+### Future free-end-time OCP
+
+- best long-term dynamics fidelity
+- highest tuning burden
+- should stay in standalone R&D mode first
+
+## Useful references
+
 - `src/concrete_block_stack/cbs_plan.md`
-
-## Future Outlook
-A future step is to make experiment setup more user-configurable through behavior trees, including a practical guide for editing and running BT experiments with GUI tooling.
-
-That future deliverable should likely become:
-- `guide.md` for experiment setup and BT authoring
-
-Current precursor material already exists in:
-- `concrete_block_behavior_tree/doc/BEHAVIOR_TREES.md`
-- `concrete_block_behavior_tree/doc/GROOT.md`
+- `src/concrete_block_stack/concrete_block_motion_planning/doc/ARCHITECTURE.md`
+- `src/concrete_block_stack/concrete_block_motion_planning/doc/SERVICES.md`
+- `src/concrete_block_stack/concrete_block_behavior_tree/doc/BEHAVIOR_TREES.md`
+- `src/concrete_block_stack/concrete_block_behavior_tree/doc/GROOT.md`

@@ -70,6 +70,7 @@ def test_bt_mode_configs_match_canonical_workflows() -> None:
         "BT_check_user_approval_condition",
         "BT_optimize_target_angle_bt_node",
         "BT_cb_prepare_move_empty_request_action",
+        "BT_cb_prepare_single_block_request_action",
         "BT_cb_plan_and_compute_trajectory_action",
         "BT_cb_execute_trajectory_action",
         "BT_cb_get_next_assembly_task_action",
@@ -135,11 +136,11 @@ def test_plan_docs_distinguish_single_block_probe_from_legacy_scan_alias() -> No
     cbs_plan = (STACK_ROOT / "cbs_plan.md").read_text()
     tasks_context = (STACK_ROOT / "tasks_context.md").read_text()
 
-    assert "single_block_plan.xml" in cbs_plan
-    assert "scan_sequence_smoke.launch.py" in cbs_plan
-    assert "legacy alias" in cbs_plan
+    assert "Single block plan" in cbs_plan
+    assert "Single block execute" in cbs_plan
+    assert "legacy aliases" in cbs_plan
     assert "Single block plan" in tasks_context
-    assert "scan_sequence_smoke.launch.py" in tasks_context
+    assert "Single block execute" in tasks_context
 
 
 def test_perception_world_model_defaults_match_staged_workflow() -> None:
@@ -149,6 +150,8 @@ def test_perception_world_model_defaults_match_staged_workflow() -> None:
 
     assert params["pipeline_mode"] == "full"
     assert params["perception_mode"] == "IDLE"
+    assert "static_scene_objects" in params["world_model"]
+    assert "block_dimensions_m" in params["world_model"]
 
 
 def test_seeded_world_model_overlay_defines_static_b0_anchor() -> None:
@@ -190,3 +193,23 @@ def test_gazebo_bt_launch_uses_composable_operator_bt_profiles() -> None:
     assert "bt_operator.yaml" in text
     assert '"profiles"' in text
     assert '"move_empty.yaml"' in text
+
+
+def test_motion_planning_defaults_include_centralized_planning_scene_service_and_acados_bench() -> None:
+    config_path = (
+        STACK_ROOT
+        / "concrete_block_motion_planning"
+        / "config"
+        / "motion_planning.yaml"
+    )
+    payload = yaml.safe_load(config_path.read_text())
+    params = payload["concrete_block_motion_planning_node"]["ros__parameters"]
+
+    assert params["world_model"]["get_planning_scene_service"] == "/world_model_node/get_planning_scene"
+    assert (
+        STACK_ROOT
+        / "concrete_block_motion_planning"
+        / "motion_planning"
+        / "data"
+        / "acados_bench_cases.yaml"
+    ).exists()
