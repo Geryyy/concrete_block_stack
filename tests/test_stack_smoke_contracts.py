@@ -139,6 +139,14 @@ def test_stack_entrypoints_and_referenced_files_exist() -> None:
         STACK_ROOT / "concrete_block_behavior_tree" / "config" / "profiles" / "single_block_execute.yaml",
         STACK_ROOT / "concrete_block_perception" / "launch" / "perception.launch.py",
         STACK_ROOT / "concrete_block_motion_planning" / "launch" / "motion_planning.launch.py",
+        STACK_ROOT
+        / "concrete_block_motion_planning"
+        / "launch"
+        / "motion_planning_timber_commissioning.launch.py",
+        STACK_ROOT
+        / "concrete_block_motion_planning"
+        / "config"
+        / "motion_planning_timber_commissioning.yaml",
     ]
 
     for path in expected_paths:
@@ -255,3 +263,26 @@ def test_motion_planning_defaults_include_centralized_planning_scene_service_and
         / "data"
         / "acados_bench_cases.yaml"
     ).exists()
+
+
+def test_timber_commissioning_preset_defaults_to_timber_backend() -> None:
+    config_path = (
+        STACK_ROOT
+        / "concrete_block_motion_planning"
+        / "config"
+        / "motion_planning_timber_commissioning.yaml"
+    )
+    payload = yaml.safe_load(config_path.read_text())
+    params = payload["concrete_block_motion_planning_node"]["ros__parameters"]
+
+    assert params["planner"]["backend"] == "timber"
+    assert params["default_trajectory_method"] == "TIMBER_MOVE_EMPTY"
+    assert params["execution"]["enabled"] is True
+    assert params["execution"]["backend"] == "action"
+
+
+def test_gazebo_bt_launch_uses_timber_commissioning_preset_for_timber_backend() -> None:
+    launch_path = BT_ROOT / "launch" / "gazebo_model_bt.launch.py"
+    text = launch_path.read_text()
+
+    assert "motion_planning_timber_commissioning.launch.py" in text
