@@ -75,6 +75,7 @@ def test_bt_mode_configs_match_canonical_workflows() -> None:
         "BT_cb_plan_and_compute_trajectory_action",
         "BT_cb_execute_trajectory_action",
         "BT_cb_get_next_assembly_task_action",
+        "BT_cb_gripper_action",
     }
 
     assert assembly_plugins == {PLUGIN_BY_NODE[node] for node in assembly_nodes}
@@ -82,7 +83,7 @@ def test_bt_mode_configs_match_canonical_workflows() -> None:
     assert dummy_nodes == set()
 
 
-def test_bt_profile_configs_use_install_space_tree_paths() -> None:
+def test_bt_profile_configs_use_runtime_tree_filenames() -> None:
     config_names = (
         "profiles/move_empty.yaml",
         "profiles/single_block_plan.yaml",
@@ -94,9 +95,8 @@ def test_bt_profile_configs_use_install_space_tree_paths() -> None:
         config_path = BT_ROOT / "config" / config_name
         payload = _load_yaml(config_path)
         behaviortree = payload["/**"]["ros__parameters"]["behaviortree"]
-        assert behaviortree.startswith(
-            "install/concrete_block_behavior_tree/share/concrete_block_behavior_tree/behavior_trees/"
-        )
+        assert "/" not in behaviortree
+        assert behaviortree.endswith(".xml")
 
 
 def test_legacy_bt_alias_configs_point_to_canonical_entrypoints() -> None:
@@ -110,7 +110,7 @@ def test_legacy_bt_alias_configs_point_to_canonical_entrypoints() -> None:
     for config_name, tree_name in expected.items():
         payload = _load_yaml(BT_ROOT / "config" / config_name)
         behaviortree = payload["/**"]["ros__parameters"]["behaviortree"]
-        assert behaviortree.endswith(f"/{tree_name}")
+        assert behaviortree == tree_name
 
 
 def test_legacy_bt_configs_do_not_load_retired_split_planning_plugins() -> None:
@@ -131,6 +131,10 @@ def test_stack_entrypoints_and_referenced_files_exist() -> None:
         STACK_ROOT / "concrete_block_behavior_tree" / "launch" / "scan_sequence_smoke.launch.py",
         STACK_ROOT / "concrete_block_behavior_tree" / "launch" / "sim_wall_build.launch.py",
         STACK_ROOT / "concrete_block_behavior_tree" / "launch" / "sim_wall_build_smoke.launch.py",
+        STACK_ROOT
+        / "concrete_block_behavior_tree"
+        / "launch"
+        / "timber_single_block_execute.launch.py",
         STACK_ROOT / "concrete_block_behavior_tree" / "config" / "bt_common.yaml",
         STACK_ROOT / "concrete_block_behavior_tree" / "config" / "bt_operator.yaml",
         STACK_ROOT / "concrete_block_behavior_tree" / "config" / "bt_assembly.yaml",
@@ -242,6 +246,15 @@ def test_gazebo_bt_launch_uses_composable_operator_bt_profiles() -> None:
     assert "bt_operator.yaml" in text
     assert '"profiles"' in text
     assert '"move_empty.yaml"' in text
+
+
+def test_timber_single_block_execute_launch_selects_timber_backend_and_execute_profile() -> None:
+    launch_path = BT_ROOT / "launch" / "timber_single_block_execute.launch.py"
+    text = launch_path.read_text()
+
+    assert '"motion_backend": "timber"' in text
+    assert "single_block_execute.yaml" in text
+    assert "gazebo_model_bt.launch.py" in text
 
 
 def test_motion_planning_defaults_include_centralized_planning_scene_service_and_acados_bench() -> None:
