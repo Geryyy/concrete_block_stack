@@ -113,6 +113,18 @@ def test_legacy_bt_alias_configs_point_to_canonical_entrypoints() -> None:
         assert behaviortree.endswith(f"/{tree_name}")
 
 
+def test_legacy_bt_configs_do_not_load_retired_split_planning_plugins() -> None:
+    dummy_payload = _load_yaml(BT_ROOT / "config" / "dummy_start.yaml")
+    move_empty_payload = _load_yaml(BT_ROOT / "config" / "move_empty_shared.yaml")
+
+    dummy_plugins = set(dummy_payload["/**"]["ros__parameters"]["plugin_lib_names"])
+    move_empty_plugins = set(move_empty_payload["/**"]["ros__parameters"]["plugin_lib_names"])
+
+    assert dummy_plugins == set()
+    assert "BT_cb_plan_geometric_path_action" not in move_empty_plugins
+    assert "BT_cb_compute_trajectory_action" not in move_empty_plugins
+
+
 def test_stack_entrypoints_and_referenced_files_exist() -> None:
     expected_paths = [
         STACK_ROOT / "concrete_block_behavior_tree" / "launch" / "bt.launch.py",
@@ -131,6 +143,13 @@ def test_stack_entrypoints_and_referenced_files_exist() -> None:
 
     for path in expected_paths:
         assert path.exists(), f"Missing expected stack entrypoint: {path}"
+
+    assert not (
+        STACK_ROOT
+        / "concrete_block_motion_planning"
+        / "scripts"
+        / "dummy_gripper_state_publisher.py"
+    ).exists()
 
 
 def test_plan_docs_distinguish_single_block_probe_from_legacy_scan_alias() -> None:
