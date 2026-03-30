@@ -160,7 +160,7 @@ def test_single_block_execute_reuses_transport_subtree() -> None:
     assert "SubTreeTransportBlock" in tree
     assert "TIMBER_GRIP" in subtree
     assert "TIMBER_LIFT" in subtree
-    assert "TIMBER_RELEASE" in subtree
+    assert "TIMBER_LAYDOWN" in subtree
     assert '<GripperAction\n        command="CLOSE"' in subtree
     assert '<GripperAction command="OPEN"' in subtree
 
