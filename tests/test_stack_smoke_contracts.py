@@ -15,6 +15,7 @@ PLUGIN_BY_NODE = {
     "PlanAndComputeTrajectory": "BT_cb_plan_and_compute_trajectory_action",
     "ComputeTrajectory": "BT_cb_compute_trajectory_action",
     "ExecuteTrajectory": "BT_cb_execute_trajectory_action",
+    "PrepareSingleBlockRequest": "BT_cb_prepare_single_block_request_action",
     "MoveToNamedConfiguration": "BT_cb_move_to_named_configuration_action",
     "GetNextAssemblyTask": "BT_cb_get_next_assembly_task_action",
     "SetBlockTaskStatus": "BT_cb_set_block_task_status_action",
@@ -143,6 +144,27 @@ def test_plan_docs_distinguish_single_block_probe_from_legacy_scan_alias() -> No
     assert "Single block execute" in tasks_context
 
 
+def test_timber_framework_outline_exists_and_captures_core_interfaces() -> None:
+    outline = (STACK_ROOT / "TIMBER_CRANE_FRAMEWORK_OUTLINE.md").read_text()
+
+    assert "a2b_movement" in outline
+    assert "grip_traj_movement" in outline
+    assert "/trajectory_controller_a2b/follow_joint_trajectory" in outline
+    assert "gripper_state" in outline
+
+
+def test_single_block_execute_reuses_transport_subtree() -> None:
+    tree = (BT_ROOT / "behavior_trees" / "single_block_execute.xml").read_text()
+    subtree = (BT_ROOT / "behavior_trees" / "subtree_transport_block.xml").read_text()
+
+    assert "SubTreeTransportBlock" in tree
+    assert "TIMBER_GRIP" in subtree
+    assert "TIMBER_LIFT" in subtree
+    assert "TIMBER_RELEASE" in subtree
+    assert '<GripperAction\n        command="CLOSE"' in subtree
+    assert '<GripperAction command="OPEN"' in subtree
+
+
 def test_perception_world_model_defaults_match_staged_workflow() -> None:
     config_path = STACK_ROOT / "concrete_block_perception" / "config" / "world_model.yaml"
     payload = yaml.safe_load(config_path.read_text())
@@ -206,6 +228,7 @@ def test_motion_planning_defaults_include_centralized_planning_scene_service_and
     params = payload["concrete_block_motion_planning_node"]["ros__parameters"]
 
     assert params["world_model"]["get_planning_scene_service"] == "/world_model_node/get_planning_scene"
+    assert params["planner"]["timber_grip_service"] == "grip_traj_movement"
     assert (
         STACK_ROOT
         / "concrete_block_motion_planning"
