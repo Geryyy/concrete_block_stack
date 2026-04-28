@@ -2,7 +2,7 @@ repositories:
   concrete_block_behavior_tree:
     type: git
     url: git@github.com:Geryyy/concrete_block_behavior_tree.git
-    version: main
+    version: feat/pzs
   concrete_block_motion_planning:
     type: git
     url: git@github.com:Geryyy/concrete_block_motion_planning.git
