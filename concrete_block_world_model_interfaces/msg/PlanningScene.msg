@@ -1,0 +1,2 @@
+std_msgs/Header header
+concrete_block_world_model_interfaces/PlanningSceneObject[] objects
