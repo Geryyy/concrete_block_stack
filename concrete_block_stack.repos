@@ -11,6 +11,22 @@ repositories:
     type: git
     url: git@github.com:Geryyy/concrete_block_perception_ros.git
     version: main
+  concrete_block_perception_interfaces:
+    type: git
+    url: git@github.com:Geryyy/concrete_block_perception_interfaces.git
+    version: main
+  concrete_block_rviz_plugins:
+    type: git
+    url: git@github.com:Geryyy/concrete_block_rviz_plugins.git
+    version: main
+  concrete_block_world_model:
+    type: git
+    url: git@github.com:Geryyy/concrete_block_world_model.git
+    version: main
+  concrete_block_world_model_interfaces:
+    type: git
+    url: git@github.com:Geryyy/concrete_block_world_model_interfaces.git
+    version: main
   ros2_yolos_cpp:
     type: git
     url: https://github.com/Geryyy/ros2_yolos_cpp.git

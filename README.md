@@ -16,7 +16,7 @@ PERCEPTION  (concrete_block_perception, ros2_yolos_cpp)
    • block_registration_node
    │   internal pipeline
    ▼
-WORLD MODEL  (block_world_model_node — PerceptionOrchestratorNode in cbP)
+WORLD MODEL  (block_world_model_node — concrete_block_world_model)
    • read services: ~/get_coarse_blocks, ~/get_planning_scene, ~/run_pose_estimation
    • write services: ~/upsert_block, ~/set_block_task_status, ~/set_mode
    • viz topics:    block_world_model, block_world_model_markers
@@ -42,7 +42,9 @@ are visualization-only — never subscribe to them for state.
 | Package | Role |
 |---|---|
 | `concrete_block_world_model_interfaces` | Pure msg/srv definitions for the world model API. No nodes. |
-| `concrete_block_perception` | Detection, tracking, registration; hosts the `block_world_model_node` (PerceptionOrchestratorNode). |
+| `concrete_block_perception` | Detection, tracking, registration providers. |
+| `concrete_block_perception_interfaces` | Pure msg/srv/action definitions for perception providers. |
+| `concrete_block_world_model` | Hosts `world_model_node` and owns persistent block world state. |
 | `concrete_block_motion_planning` | Wall plan progress, IK, gripper trajectory generation. |
 | `concrete_block_behavior_tree` | BT XMLs and action plugins. |
 | `ros2_yolos_cpp` | Vendored YOLO inference wrapper (segmentor service used by world model). |
@@ -111,8 +113,8 @@ ros2 run groot Groot
 | `~/set_block_task_status`, `~/upsert_block`, `~/set_mode`, `~/run_pose_estimation` | block_world_model_node | `concrete_block_world_model_interfaces/srv/...` |
 | `~/get_next_assembly_task` | concrete_block_motion_planning_node | `concrete_block_motion_planning/srv/GetNextAssemblyTask` |
 | `grip_traj_movement` | grip_traj_server | `timber_crane_planning_interfaces/srv/CalcGripMovement` |
-| `register_block_pose` (+ `register_block` action) | block_registration_node | `concrete_block_perception/srv/RegisterBlock` |
-| `~/track` | block_detection_tracking_node | `concrete_block_perception/srv/TrackDetections` |
+| `register_block_pose` (+ `register_block` action) | block_registration_node | `concrete_block_perception_interfaces/srv/RegisterBlock` |
+| `~/track` | block_detection_tracking_node | `concrete_block_perception_interfaces/srv/TrackDetections` |
 | `/yolos_segmentor_service/segment` | yolos segmentor | `ros2_yolos_cpp/srv/SegmentImage` |
 
 ## Design notes
