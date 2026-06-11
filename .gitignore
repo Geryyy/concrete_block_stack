@@ -1,9 +1,12 @@
 # keep package repos managed independently
+/concrete_block_assembly_interfaces/
+/concrete_block_assembly_planning/
 /concrete_block_behavior_tree/
 /concrete_block_motion_planning/
 /concrete_block_perception/
 /concrete_block_perception_interfaces/
 /concrete_block_rviz_plugins/
+/concrete_block_viz_common/
 /concrete_block_world_model/
 /concrete_block_world_model_interfaces/
 /ros2_yolos_cpp/
