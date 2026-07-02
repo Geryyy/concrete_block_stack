@@ -18,7 +18,7 @@ repositories:
   concrete_block_perception:
     type: git
     url: https://github.com/Geryyy/concrete_block_perception_ros.git
-    version: feat/robust-plane-registration
+    version: main
   concrete_block_perception_interfaces:
     type: git
     url: https://github.com/Geryyy/concrete_block_perception_interfaces.git
