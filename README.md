@@ -28,7 +28,7 @@ MOTION PLANNING  (concrete_block_motion_planning) │
    │   pull queries                               │
    ▼                                              │
 BEHAVIOR TREE  (concrete_block_behavior_tree)─────┘
-   Trees:    basic_pick_and_place.xml, wall_assembly.xml
+   Trees:    basic_pick_and_place.xml, stack_block_1_on_block_2.xml, wall_assembly.xml
    Subtree:  subtree_pick_and_place_block.xml  (the primitive skill)
    Plugins:  GetNextAssemblyTask, SetBlockTaskStatus, SetPlaceApproachPose
    Calls:    motion planning, world model, joint trajectory controller
@@ -94,8 +94,8 @@ python3 -m pytest tests/test_dependency_smoke.py -v
 
 The BT primitive lives in `concrete_block_behavior_tree/behavior_trees/subtree_pick_and_place_block.xml`
 (9-step sequence: approach → open → descend → close → lift → approach_place → descend → open → lift).
-Both `basic_pick_and_place.xml` (hardcoded coords) and `wall_assembly.xml` (loop with
-`GetNextAssemblyTask`) re-use that subtree.
+Both `basic_pick_and_place.xml` (single planned block move) and
+`wall_assembly.xml` (loop with `GetNextAssemblyTask`) re-use that subtree.
 
 Edit XMLs directly for parameter tweaks; for structural changes (add/remove steps,
 fallbacks, recovery branches) use Groot v1:
