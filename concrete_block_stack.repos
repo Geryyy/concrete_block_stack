@@ -43,3 +43,7 @@ repositories:
     type: git
     url: https://github.com/Geryyy/ros2_yolos_cpp.git
     version: main
+  sam2_segmentation:
+    type: git
+    url: https://github.com/Geryyy/ros2_sam2_segmentation.git
+    version: main
