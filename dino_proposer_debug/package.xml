@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>dino_proposer_debug</name>
+  <version>0.0.1</version>
+  <description>
+    Standalone, opt-in diagnostic node: runs blockpose's already-trained
+    DINOv2-based region proposer on a live RGB topic and republishes the
+    frame with proposal bounding boxes drawn on it, purely for a human
+    go/no-go eyeball check. Not part of, and not wired into, the production
+    detection/planning/behavior-tree stack -- nothing subscribes to its
+    output. Must be launched separately (see launch/dino_proposer_overlay.launch.py).
+  </description>
+  <maintainer email="gerald.ebmer@gmail.com">Gerald Ebmer</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
+
+  <!--
+    Heavy runtime deps (torch, torchvision, transformers, numpy, scipy,
+    pillow) are NOT declared here via rosdep. They come from the sibling
+    `blockpose` package's own environment: run "uv sync, extra sam" in
+    `src/concrete_block_stack/blockpose` (confirmed extra name, see that
+    package's pyproject.toml `[project.optional-dependencies].sam`) to get
+    torch/torchvision/transformers, plus whatever provides blockpose's base
+    deps (numpy/scipy/pillow/open3d/etc). This node imports
+    `blockpose.rgb_region_proposer` lazily on the first image callback and
+    logs one clear error (without crashing) if that environment isn't on
+    the path; see the node's `blockpose_python_path` parameter.
+  -->
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
