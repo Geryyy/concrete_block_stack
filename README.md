@@ -28,7 +28,9 @@ MOTION PLANNING  (concrete_block_motion_planning) │
    │   pull queries                               │
    ▼                                              │
 BEHAVIOR TREE  (concrete_block_behavior_tree)─────┘
-   Trees:    basic_pick_and_place.xml, stack_block_1_on_block_2.xml, wall_assembly.xml
+   Trees:    basic_pick_and_place.xml, wall_assembly.xml (plan selected via
+             the Plan Control RViz panel; wall_assembly.xml serves every
+             named wall_plans.yaml entry, not just one wall)
    Subtree:  subtree_pick_and_place_block.xml  (the primitive skill)
    Plugins:  GetNextAssemblyTask, SetBlockTaskStatus, SetPlaceApproachPose
    Calls:    motion planning, world model, joint trajectory controller
