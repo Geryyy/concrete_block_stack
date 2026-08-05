@@ -47,3 +47,11 @@ repositories:
     type: git
     url: https://github.com/Geryyy/ros2_sam2_segmentation.git
     version: main
+  concrete_block_detector:
+    type: git
+    url: https://github.com/Geryyy/concrete_block_detector.git
+    version: main
+  blockpose:
+    type: git
+    url: https://github.com/Geryyy/blockpose.git
+    version: main
