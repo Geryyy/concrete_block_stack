@@ -10,6 +10,9 @@
 /concrete_block_world_model/
 /concrete_block_world_model_interfaces/
 /ros2_yolos_cpp/
+/blockpose/
+/concrete_block_detector/
+/sam2_segmentation/
 
 # local/editor noise
 .DS_Store
