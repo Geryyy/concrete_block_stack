@@ -13,6 +13,13 @@
 /blockpose/
 /concrete_block_detector/
 /sam2_segmentation/
+/crane_bringup/
+/crane_control/
+/crane_model/
+/crane_mpc/
+/crane_msgs/
+/crane_planning/
+/crane_supervisor/
 
 # local/editor noise
 .DS_Store

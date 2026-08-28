@@ -1,8 +1,11 @@
 # concrete_block_stack
 
 ROS 2 stack for autonomous concrete-block wall assembly with the Epsilon timber crane.
-Five packages glue together perception, a world model, motion planning, and a behavior
-tree on top of the upstream `timber_crane_*` and `epsilon_crane_*` packages.
+This directory is the active source boundary: concrete-block capability packages and
+the new `crane_*` control architecture live here. Retired implementations are
+quarantined under `../legacy/` and excluded by its `COLCON_IGNORE`. Mixed
+infrastructure repositories use package-level ignore markers so their required
+interfaces and hardware packages can remain active without reviving old controllers.
 
 ## Architecture
 
@@ -50,12 +53,19 @@ are visualization-only — never subscribe to them for state.
 | `concrete_block_motion_planning` | Wall plan progress, IK, gripper trajectory generation. |
 | `concrete_block_behavior_tree` | BT XMLs and action plugins. |
 | `ros2_yolos_cpp` | Vendored YOLO inference wrapper (segmentor service used by world model). |
+| `crane_msgs` | Cross-layer contracts for the new control architecture. |
+| `crane_model` | Numeric and generated-model boundary shared by planning and control. |
+| `crane_control` | Inner velocity loop, trajectory frontend, and state estimation. |
+| `crane_planning` | Geometric and timing planner. |
+| `crane_mpc` | acados MPC and shadow/active horizon producer. |
+| `crane_supervisor` | Health, interlock, and command-path arbitration. |
+| `crane_bringup` | Named compositions for the new architecture. |
 
 ## Build
 
 ```bash
 # From workspace root
-colcon build --packages-up-to concrete_block_behavior_tree
+colcon build --base-paths src/concrete_block_stack
 source install/setup.bash
 ```
 
