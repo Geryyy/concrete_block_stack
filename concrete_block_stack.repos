@@ -5,8 +5,8 @@
 # The crane_* architecture packages also live here but are pinned separately, by
 # SHA, in the workspace-root cbs.repos. They are deliberately not listed twice.
 #
-# NOTE: concrete_block_perception's feat/cbs-retire-passive-estimator is
-# LOCAL-ONLY -- not pushed, so a fresh clone cannot resolve it yet.
+# NOTE: the feat/jazzy branches below are LOCAL-ONLY -- not pushed, so a fresh
+# clone cannot resolve them yet. They carry the Gazebo Classic -> gz port.
 repositories:
   concrete_block_assembly_interfaces:
     type: git
@@ -19,7 +19,7 @@ repositories:
   concrete_block_behavior_tree:
     type: git
     url: https://github.com/Geryyy/concrete_block_behavior_tree.git
-    version: main
+    version: feat/jazzy
   concrete_block_motion_planning:
     type: git
     url: https://github.com/Geryyy/concrete_block_motion_planning.git
@@ -27,7 +27,7 @@ repositories:
   concrete_block_perception:
     type: git
     url: https://github.com/Geryyy/concrete_block_perception_ros.git
-    version: feat/cbs-retire-passive-estimator
+    version: feat/jazzy
   concrete_block_perception_interfaces:
     type: git
     url: https://github.com/Geryyy/concrete_block_perception_interfaces.git
