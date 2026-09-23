@@ -18,6 +18,7 @@
 /crane_model/
 /crane_mpc/
 /crane_msgs/
+/crane_ocp/
 /crane_planning/
 /crane_supervisor/
 
