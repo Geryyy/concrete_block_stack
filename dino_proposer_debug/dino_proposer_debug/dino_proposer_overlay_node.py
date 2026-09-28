@@ -8,7 +8,7 @@ frame on a debug topic -- purely so a human can eyeball whether the proposer
 looks like it is finding real blocks. This is a rough go/no-go signal for a
 research direction, NOT a production perception component:
 
-  * Nothing in `concrete_block_perception`/`concrete_block_behavior_tree`
+  * Nothing in `concrete_block_detector`/`concrete_block_behavior_tree`
     subscribes to this node's output.
   * This node is never launched from the production stack -- start it
     standalone with `ros2 launch dino_proposer_debug
@@ -50,34 +50,40 @@ def _default_blockpose_python_path() -> str:
     Override with the `blockpose_python_path` parameter if either changes.
     """
     here = Path(__file__).resolve()
-    return str(here.parents[2] / 'blockpose' / 'python')
+    return str(here.parents[2] / "blockpose" / "python")
 
 
 def _default_checkpoint_dir() -> str:
     """Sibling blockpose repo's production dino_proposer checkpoint dir."""
     here = Path(__file__).resolve()
-    return str(here.parents[2] / 'blockpose' / 'models' / 'production' / 'dino_proposer')
+    return str(
+        here.parents[2] / "blockpose" / "models" / "production" / "dino_proposer"
+    )
 
 
 class DinoProposerOverlayNode(Node):
     """Overlay blockpose `dino_proposer` region-proposal boxes on a live RGB topic."""
 
     def __init__(self) -> None:
-        super().__init__('dino_proposer_overlay_node')
+        super().__init__("dino_proposer_overlay_node")
 
-        self.declare_parameter('image_topic', '/blackfly_rotated/image_rect')
-        self.declare_parameter('overlay_topic', '/cbp/debug/dino_proposer_overlay')
-        self.declare_parameter('checkpoint_dir', _default_checkpoint_dir())
-        self.declare_parameter('blockpose_python_path', _default_blockpose_python_path())
-        self.declare_parameter('box_color', [0, 255, 0])
-        self.declare_parameter('box_width', 3)
+        self.declare_parameter("image_topic", "/blackfly_rotated/image_rect")
+        self.declare_parameter("overlay_topic", "/cbp/debug/dino_proposer_overlay")
+        self.declare_parameter("checkpoint_dir", _default_checkpoint_dir())
+        self.declare_parameter(
+            "blockpose_python_path", _default_blockpose_python_path()
+        )
+        self.declare_parameter("box_color", [0, 255, 0])
+        self.declare_parameter("box_width", 3)
 
-        self._image_topic: str = self.get_parameter('image_topic').value
-        self._overlay_topic: str = self.get_parameter('overlay_topic').value
-        self._checkpoint_dir: str = self.get_parameter('checkpoint_dir').value
-        self._blockpose_python_path: str = self.get_parameter('blockpose_python_path').value
-        self._box_color = tuple(self.get_parameter('box_color').value)
-        self._box_width: int = int(self.get_parameter('box_width').value)
+        self._image_topic: str = self.get_parameter("image_topic").value
+        self._overlay_topic: str = self.get_parameter("overlay_topic").value
+        self._checkpoint_dir: str = self.get_parameter("checkpoint_dir").value
+        self._blockpose_python_path: str = self.get_parameter(
+            "blockpose_python_path"
+        ).value
+        self._box_color = tuple(self.get_parameter("box_color").value)
+        self._box_width: int = int(self.get_parameter("box_width").value)
 
         self._bridge = CvBridge()
         # Lazy-loaded on the first image callback; see `_ensure_loaded`.
@@ -145,31 +151,31 @@ class DinoProposerOverlayNode(Node):
             return
 
         try:
-            rgb = self._bridge.imgmsg_to_cv2(msg, desired_encoding='rgb8')
+            rgb = self._bridge.imgmsg_to_cv2(msg, desired_encoding="rgb8")
         except Exception as exc:  # noqa: BLE001 - diagnostic tool: log and skip frame
-            self.get_logger().error(f'cv_bridge conversion failed: {exc}')
+            self.get_logger().error(f"cv_bridge conversion failed: {exc}")
             return
 
         try:
             probability_map = self._head.predict_proposal_map(rgb)
             proposals = self._extract_region_proposals(
-                probability_map, self._config, provider='dino_proposer_debug_node'
+                probability_map, self._config, provider="dino_proposer_debug_node"
             )
         except Exception:  # noqa: BLE001 - diagnostic tool: log and skip frame
             self.get_logger().error(
-                f'dino_proposer inference failed on this frame\n{traceback.format_exc()}'
+                f"dino_proposer inference failed on this frame\n{traceback.format_exc()}"
             )
             return
 
         if not proposals:
-            self.get_logger().debug('dino_proposer: 0 proposals in this frame')
+            self.get_logger().debug("dino_proposer: 0 proposals in this frame")
 
         annotated = self._draw_proposals(rgb, proposals)
 
         try:
-            out_msg = self._bridge.cv2_to_imgmsg(annotated, encoding='rgb8')
+            out_msg = self._bridge.cv2_to_imgmsg(annotated, encoding="rgb8")
         except Exception as exc:  # noqa: BLE001
-            self.get_logger().error(f'cv_bridge re-encode failed: {exc}')
+            self.get_logger().error(f"cv_bridge re-encode failed: {exc}")
             return
         out_msg.header = msg.header
         self._pub.publish(out_msg)
@@ -182,14 +188,21 @@ class DinoProposerOverlayNode(Node):
         posed-cuboid wireframe to a plain axis-aligned box since a region
         proposal has no pose, only a 2-D bbox + mask.
         """
-        from PIL import Image as PILImage, ImageDraw
+        from PIL import Image as PILImage
+        from PIL import ImageDraw
 
         image = PILImage.fromarray(np.asarray(rgb, dtype=np.uint8).copy())
         draw = ImageDraw.Draw(image)
         for proposal in proposals:
             x, y, w, h = proposal.bbox_xywh
-            draw.rectangle([x, y, x + w - 1, y + h - 1], outline=self._box_color, width=self._box_width)
-            draw.text((x, max(0, y - 12)), f'{proposal.score:.2f}', fill=self._box_color)
+            draw.rectangle(
+                [x, y, x + w - 1, y + h - 1],
+                outline=self._box_color,
+                width=self._box_width,
+            )
+            draw.text(
+                (x, max(0, y - 12)), f"{proposal.score:.2f}", fill=self._box_color
+            )
         return np.asarray(image)
 
 
@@ -205,5 +218,5 @@ def main(args=None) -> None:
         rclpy.shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

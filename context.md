@@ -16,11 +16,11 @@ Build an integrated ROS 2 stack for autonomous concrete block assembly with thre
 ## System Pillars
 
 ### 1. Perception
-Package: `concrete_block_perception`
+Packages: `concrete_block_detector` (measurement), `concrete_block_world_model` (state)
 
 Responsibilities:
-- Detect and segment blocks from camera + point cloud input.
-- Run registration on demand for precise block poses.
+- Detect blocks as cuboid hypotheses from point cloud input, optionally primed by pose priors.
+- Answer every pose request on demand: scene discovery and the two refine modes.
 - Publish and maintain a persistent world model.
 
 Current status:
@@ -61,7 +61,7 @@ Current status:
 ## Integration Architecture
 
 Data/control flow:
-1. BT requests scene discovery and pose refinement via `concrete_block_perception`.
+1. BT requests scene discovery and pose refinement via `concrete_block_world_model`, which measures through `concrete_block_detector`.
 2. BT selects target/reference context and calls geometric planning service.
 3. BT calls trajectory computation service on top of geometric result.
 4. BT triggers trajectory execution service and checks completion status.

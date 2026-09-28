@@ -7,6 +7,11 @@
 #
 # NOTE: the feat/jazzy branches below are LOCAL-ONLY -- not pushed, so a fresh
 # clone cannot resolve them yet. They carry the Gazebo Classic -> gz port.
+#
+# Dropped (issue 179): concrete_block_perception, concrete_block_perception_interfaces,
+# ros2_yolos_cpp, sam2_segmentation. The RGB path they served -- YOLO segment, mask cutout,
+# ICP registration -- is gone; concrete_block_detector answers every pose request now.
+# Existing checkouts under src/concrete_block_stack/ are not removed by this file.
 repositories:
   concrete_block_assembly_interfaces:
     type: git
@@ -24,14 +29,6 @@ repositories:
     type: git
     url: https://github.com/Geryyy/concrete_block_motion_planning.git
     version: main
-  concrete_block_perception:
-    type: git
-    url: https://github.com/Geryyy/concrete_block_perception_ros.git
-    version: feat/jazzy
-  concrete_block_perception_interfaces:
-    type: git
-    url: https://github.com/Geryyy/concrete_block_perception_interfaces.git
-    version: main
   concrete_block_rviz_plugins:
     type: git
     url: https://github.com/Geryyy/concrete_block_rviz_plugins.git
@@ -47,14 +44,6 @@ repositories:
   concrete_block_world_model_interfaces:
     type: git
     url: https://github.com/Geryyy/concrete_block_world_model_interfaces.git
-    version: main
-  ros2_yolos_cpp:
-    type: git
-    url: https://github.com/Geryyy/ros2_yolos_cpp.git
-    version: main
-  sam2_segmentation:
-    type: git
-    url: https://github.com/Geryyy/ros2_sam2_segmentation.git
     version: main
   concrete_block_detector:
     type: git

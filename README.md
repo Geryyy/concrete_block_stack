@@ -10,14 +10,12 @@ interfaces and hardware packages can remain active without reviving old controll
 ## Architecture
 
 ```
-sensors (ZED2i camera, Seyond lidar)
+sensors (Seyond lidar, Blackfly camera)
    │
    ▼
-PERCEPTION  (concrete_block_perception, ros2_yolos_cpp)
-   • segmentor service          (yolos_cpp)
-   • block_detection_tracking_node
-   • block_registration_node
-   │   internal pipeline
+PERCEPTION  (concrete_block_detector)
+   • discover_blocks service    (point-cloud cuboid hypotheses, pose priors)
+   │   one service call per world-model request
    ▼
 WORLD MODEL  (block_world_model_node — concrete_block_world_model)
    • read services: ~/get_coarse_blocks, ~/get_planning_scene, ~/run_pose_estimation
@@ -47,12 +45,10 @@ are visualization-only — never subscribe to them for state.
 | Package | Role |
 |---|---|
 | `concrete_block_world_model_interfaces` | Pure msg/srv definitions for the world model API. No nodes. |
-| `concrete_block_perception` | Detection, tracking, registration providers. |
-| `concrete_block_perception_interfaces` | Pure msg/srv/action definitions for perception providers. |
+| `concrete_block_detector` | The block-pose source: `discover_blocks` over a point cloud. |
 | `concrete_block_world_model` | Hosts `world_model_node` and owns persistent block world state. |
 | `concrete_block_motion_planning` | Wall plan progress, IK, gripper trajectory generation. |
 | `concrete_block_behavior_tree` | BT XMLs and action plugins. |
-| `ros2_yolos_cpp` | Vendored YOLO inference wrapper (segmentor service used by world model). |
 | `crane_msgs` | Cross-layer contracts for the new control architecture. |
 | `crane_model` | Numeric and generated-model boundary shared by planning and control. |
 | `crane_control` | Inner velocity loop, trajectory frontend, and state estimation. |
@@ -85,17 +81,17 @@ Simulation, full wall assembly loop:
 ros2 launch concrete_block_behavior_tree gazebo_wall_assembly_pzs100.launch.py
 ```
 
-Perception bringup only (real hardware):
+Detector only:
 
 ```bash
-ros2 launch concrete_block_perception perception.launch.py
+ros2 launch concrete_block_detector concrete_block_detector.launch.py
 ```
 
 ## Test
 
 ```bash
 # C++ unit tests for world model utils
-colcon test --packages-select concrete_block_perception
+colcon test --packages-select concrete_block_world_model
 colcon test-result --verbose
 
 # Dependency smoke (pinocchio + casadi + acados + open3d)
@@ -107,7 +103,7 @@ python3 -m pytest tests/test_dependency_smoke.py -v
 The BT primitive lives in `concrete_block_behavior_tree/behavior_trees/subtree_pick_and_place_block.xml`
 (9-step sequence: approach → open → descend → close → lift → approach_place → descend → open → lift).
 Both `basic_pick_and_place.xml` (single planned block move) and
-`wall_assembly.xml` (loop with `GetNextAssemblyTask`) re-use that subtree.
+`wall_assembly.xml` (loop with `GetNextAssemblyTask`) reuse that subtree.
 
 Edit XMLs directly for parameter tweaks; for structural changes (add/remove steps,
 fallbacks, recovery branches) use Groot v1:
@@ -125,9 +121,7 @@ ros2 run groot Groot
 | `~/set_block_task_status`, `~/upsert_block`, `~/set_mode`, `~/run_pose_estimation` | block_world_model_node | `concrete_block_world_model_interfaces/srv/...` |
 | `~/get_next_assembly_task` | concrete_block_motion_planning_node | `concrete_block_motion_planning/srv/GetNextAssemblyTask` |
 | `grip_traj_movement` | grip_traj_server | `timber_crane_planning_interfaces/srv/CalcGripMovement` |
-| `register_block_pose` (+ `register_block` action) | block_registration_node | `concrete_block_perception_interfaces/srv/RegisterBlock` |
-| `~/track` | block_detection_tracking_node | `concrete_block_perception_interfaces/srv/TrackDetections` |
-| `/yolos_segmentor_service/segment` | yolos segmentor | `ros2_yolos_cpp/srv/SegmentImage` |
+| `/concrete_block_detector/discover_blocks` | concrete_block_detector_node | `concrete_block_world_model_interfaces/srv/DiscoverBlocks` |
 
 ## Design notes
 
