@@ -1,10 +1,13 @@
 """
 Fig. 9 (paper draft): MPC timing contract and data flow of one cycle, t - t_m axis.
 
-wiki/mpc.md (timing) / paper §7.4: T_s = D = 60 ms, joint states and the joint velocity
-controller (JTC) at 100 Hz. Cycle n reads x(t_m), rolls it forward D under the controller's
-mean output u_bar over [t_m - T_s, t_m), then T_s under u_{n-1} -> x0_hat, knot 0 of
-horizon n at t_m + D + T_s. SOLVE is illustrative (budget = T_s).
+wiki/mpc.md (timing), paper §7.4, crane_mpc cycle.py / horizon.py: T_s = D = 60 ms,
+joint states and the joint velocity controller (JTC) at 100 Hz. Horizon n is stamped t_m;
+the controller plays u_{n-1} over [t_m, t_m+T_s), u_0^(n) from t_m+T_s; each command
+reaches the valves D later. Cycle n reads x(t_m) and rolls it forward under what acts at
+the valves -- D under u_bar (controller mean over [t_m-T_s, t_m)), T_s under u_{n-1} --
+to x0_hat at t_m+D+T_s, where u_0^(n) arrives. Cycle n is highlighted, other cycles grey.
+SOLVE is illustrative (budget = T_s).
 """
 
 import sys
@@ -21,17 +24,27 @@ TS = D = 60  # ms
 TICK = 10  # joint states / controller period, ms
 SOLVE = 34  # ms, drawn solve time (any value < T_s keeps the contract)
 T0, T1 = -75, 215
-Y = {"js": 4.0, "pred": 3.0, "mpc": 2.0, "ctrl": 1.0}
+Y = {"js": 5.0, "pred": 4.0, "mpc": 3.0, "ctrl": 2.0, "valve": 1.0}
 NAME = {
     "js": "joint states\n100 Hz",
     "pred": "state\nprediction",
     "mpc": "MPC",
     "ctrl": "joint velocity\ncontroller, 100 Hz",
+    "valve": "valves, 100 Hz\n(after delay $D$)",
 }
 B = r"\mathbf"  # bold vectors in mathtext
+U_BAR = rf"$\bar{{{B}{{u}}}}$"
+U_PREV = rf"${B}{{u}}_{{n-1}}$"
+BLUE, H = pal.ROLE["mpc"], 0.26
+OTHER = pal.MUTED  # elements of other cycles
+FOCUS = "#EEF4F8"  # cycle n band: a whisper of TU blue
 
 pal.use()
-fig, ax = plt.subplots(figsize=(pal.WIDTH["onehalf"], 2.9))
+fig, ax = plt.subplots(figsize=(pal.WIDTH["onehalf"], 3.4))
+ax.axvspan(0, D + TS, color=FOCUS, lw=0, zorder=-1)
+ax.text(
+    (D + TS) / 2, 5.62, "cycle $n$", ha="center", va="top", fontsize=6.5, color=BLUE
+)
 for k, y in Y.items():
     ax.axhline(y, color=pal.GRID, lw=0.6, zorder=0)
     ax.text(T0 - 4, y, NAME[k], ha="right", va="center", linespacing=1.1)
@@ -42,10 +55,10 @@ def txt(t, y, s, **kw):
     ax.text(t, y, s, **kw)
 
 
-def bar(t0, t1, y, color, text=None, h=0.3, **kw):
+def bar(t0, t1, y, color, text=None, h=H, fg="w", **kw):
     ax.add_patch(Rectangle((t0, y - h / 2), t1 - t0, h, color=color, lw=0, **kw))
     if text:
-        txt((t0 + t1) / 2, y, text, color="w")
+        txt((t0 + min(t1, T1)) / 2, y, text, color=fg, fontsize=6.5)
 
 
 def flow(a, b, color=pal.INK, rad=0.0, ls="-"):
@@ -67,84 +80,94 @@ def flow(a, b, color=pal.INK, rad=0.0, ls="-"):
     )
 
 
-def dot(t, y, filled=True, ms=3.2):
+def dot(t, y, filled=True, ms=3.2, color=pal.INK):
     ax.plot(
-        [t],
-        [y],
-        "o",
-        ms=ms,
-        mfc=pal.INK if filled else "w",
-        mec=pal.INK,
-        mew=0.6,
-        zorder=5,
+        [t], [y], "o", ms=ms, mfc=color if filled else "w", mec=color, mew=0.6, zorder=5
     )
-
-
-def span(t0, t1, y, s):
-    ax.annotate(
-        "",
-        (t0, y),
-        (t1, y),
-        arrowprops=dict(
-            arrowstyle="<|-|>",
-            lw=0.5,
-            color=pal.GRAY,
-            mutation_scale=5,
-            shrinkA=0,
-            shrinkB=0,
-        ),
-    )
-    txt((t0 + t1) / 2, y + 0.1, s, color=pal.GRAY, va="bottom")
 
 
 ticks = np.arange(-70, T1, TICK)
-x_m = rf"${B}{{x}}(t_\mathrm{{m}})$"
 
-# joint states: samples x(t_j); cycles n-1 and n use x(t_m - T_s) and x(t_m)
+# joint states: samples x(t_j); cycle n reads x(t_m), cycle n-1 read x(t_m - T_s)
 ax.vlines(ticks, Y["js"] - 0.1, Y["js"] + 0.1, color=pal.MUTED, lw=0.6)
-for t, s in [(-TS, rf"${B}{{x}}(t_\mathrm{{m}}{{-}}T_\mathrm{{s}})$"), (0, x_m)]:
-    dot(t, Y["js"])
-    txt(t, Y["js"] + 0.22, s, va="bottom")
-
-# controller: output u(t_j) every tick; its mean over the last cycle is u_bar
-ax.vlines(ticks, Y["ctrl"] - 0.1, Y["ctrl"] + 0.1, color=pal.INK, lw=0.6)
-ax.add_patch(
-    Rectangle((-TS, Y["ctrl"] - 0.22), TS, 0.44, color=pal.TOLERANCE, lw=0, zorder=0)
-)
-txt(-TS / 2, Y["ctrl"] - 0.34, rf"$\bar{{{B}{{u}}}}$ = mean ${B}{{u}}(t_j)$", va="top")
-txt(-68, Y["ctrl"] + 0.2, rf"${B}{{u}}(t_j)$", va="bottom", ha="left", color=pal.GRAY)
+dot(-TS, Y["js"], color=OTHER)
 txt(
-    SOLVE + 3,
-    Y["ctrl"] - 0.34,
-    "runs horizon $n$",
-    va="top",
+    -TS,
+    Y["js"] + 0.22,
+    rf"${B}{{x}}(t_\mathrm{{m}}{{-}}T_\mathrm{{s}})$",
+    va="bottom",
+    color=OTHER,
+)
+dot(0, Y["js"])
+txt(0, Y["js"] + 0.22, rf"${B}{{x}}(t_\mathrm{{m}})$", va="bottom")
+
+# controller output u(t_j) and the same commands at the valves, D later
+# Both lanes carry the controller's 100 Hz output u(t_j) (horizon feed-forward + PI),
+# the valves D later; only the prediction replaces [t_m - T_s, t_m) by its mean u_bar.
+segments = [  # (start, controller label, valve label, colour, text colour, alpha)
+    (
+        -TS,
+        rf"${B}{{u}}(t_j)$, mean {U_BAR}",
+        rf"${B}{{u}}(t_j)$",
+        pal.TOLERANCE,
+        pal.INK,
+        1.0,
+    ),
+    (0, U_PREV, U_PREV, pal.GRAY, "w", 1.0),
+    (TS, rf"${B}{{u}}_0^{{(n)}}$", rf"${B}{{u}}_0^{{(n)}}$", BLUE, "w", 1.0),
+    (2 * TS, rf"${B}{{u}}_1^{{(n)}}$", rf"${B}{{u}}_1^{{(n)}}$", pal.WASH, "w", 1.0),
+]
+for t, label, valve, color, fg, alpha in segments:
+    bar(t, t + TS, Y["ctrl"], color, label, fg=fg, alpha=alpha)
+    bar(t + D, t + D + TS, Y["valve"], color, valve, fg=fg, alpha=alpha)
+    for y, t0 in ((Y["ctrl"], t), (Y["valve"], t + D)):  # 10 ms cells: the 100 Hz grid
+        cells = np.arange(t0 + TICK, min(t0 + TS, T1), TICK)
+        ax.vlines(cells, y - H / 2, y + H / 2, color="w", lw=0.35, alpha=0.8, zorder=2)
+    if t + D < T1 - 20:
+        c = BLUE if t == TS else pal.GRAY
+        flow((t + 1, Y["ctrl"] - H / 2), (t + D + 1, Y["valve"] + H / 2), color=c)
+ax.vlines(
+    ticks, Y["ctrl"] - 0.1, Y["ctrl"] + 0.1, color=pal.INK, lw=0.5, zorder=0.5
+)  # under bars
+txt(
+    3 * TS + 6,
+    (Y["ctrl"] + Y["valve"]) / 2,
+    "transport\ndelay $D$",
+    color=pal.GRAY,
+    fontsize=6.5,
     ha="left",
-    color=pal.ROLE["mpc"],
+    linespacing=1.2,
 )
 
-# MPC: solve n-1 and n start on their measurement, publish within T_s
-bar(-TS, -TS + SOLVE, Y["mpc"], pal.MUTED, "solve $n{-}1$")
-bar(0, SOLVE, Y["mpc"], pal.ROLE["mpc"], "solve $n$")
-span(0, TS, Y["mpc"] - 0.42, "")
-txt(TS + 3, Y["mpc"] - 0.42, r"budget $T_\mathrm{s}$", ha="left", color=pal.GRAY)
-for t, c in [(-TS + SOLVE, pal.MUTED), (SOLVE, pal.ROLE["mpc"])]:
-    flow((t, Y["mpc"] - 0.15), (t, Y["ctrl"] + 0.12), color=c)
-txt(SOLVE + 2, 1.3, "publish", ha="left", color=pal.ROLE["mpc"])
-# horizon n: knot k at t_m + D + T_s + k T_s, stamped t_m
-for k in range(2):
-    t = D + TS + k * TS
-    dot(t, Y["mpc"], filled=False, ms=3.0)
-    txt(t, Y["mpc"] - 0.22, rf"${B}{{u}}_{k}^{{(n)}}$", va="top", color=pal.ROLE["mpc"])
-txt(D + 3 * TS - 22, Y["mpc"], r"$\cdots$", color=pal.ROLE["mpc"])
-txt(D + 2.5 * TS, Y["mpc"] + 0.2, "horizon $n$", va="bottom", color=pal.ROLE["mpc"])
+# MPC: solve n-1 (grey) and n, each within the budget T_s from its measurement
+ax.add_patch(
+    Rectangle(
+        (0, Y["mpc"] - 0.2), TS, 0.4, fill=False, ec=pal.GRAY, lw=0.5, ls=(0, (2, 1.5))
+    )
+)
+txt(
+    TS + 3,
+    Y["mpc"] - 0.12,
+    r"budget $T_\mathrm{s}$",
+    ha="left",
+    color=pal.GRAY,
+    fontsize=6.5,
+)
+bar(-TS, -TS + SOLVE, Y["mpc"], OTHER, "solve $n{-}1$", h=0.3)
+bar(0, SOLVE, Y["mpc"], BLUE, "solve $n$", h=0.3)
+# publish: horizon n-1 plays from t_m, horizon n's u_0 leaves the controller at t_m + T_s
+flow((-TS + SOLVE, Y["mpc"] - 0.15), (6, Y["ctrl"] + H / 2), color=OTHER, rad=0.25)
+flow((SOLVE, Y["mpc"] - 0.15), (TS + 8, Y["ctrl"] + H / 2), color=BLUE, rad=0.25)
+txt(SOLVE + 18, 2.62, "publish", ha="left", color=BLUE, fontsize=6.5)
 
-# prediction: x(t_m) --F(., u_bar) over D--> x_hat(t_m + D) --F(., u_{n-1}) over T_s--> x0_hat
+# prediction: x(t_m) --F(., u_bar) over D--> x_hat(t_m+D) --F(., u_{n-1}) over T_s--> x0_hat
 bar(
     0,
     D,
     Y["pred"],
     pal.ROLE["model"],
-    rf"$F(\cdot,\bar{{{B}{{u}}}})$ over $D$",
+    rf"$F(\cdot,${U_BAR}$)$ over $D$",
+    h=0.3,
     alpha=0.55,
 )
 bar(
@@ -152,7 +175,8 @@ bar(
     D + TS,
     Y["pred"],
     pal.ROLE["model"],
-    rf"$F(\cdot,{B}{{u}}_{{n-1}})$ over $T_\mathrm{{s}}$",
+    rf"$F(\cdot,${U_PREV}$)$ over $T_\mathrm{{s}}$",
+    h=0.3,
 )
 dot(0, Y["pred"])
 dot(D, Y["pred"], filled=False)
@@ -166,27 +190,20 @@ txt(
     ha="left",
 )
 
-# data flow
-flow((0, Y["js"] - 0.05), (0, Y["pred"] + 0.06))  # measurement -> prediction
-flow((-TS / 2, Y["ctrl"] + 0.22), (D / 4, Y["pred"] - 0.16), rad=-0.12)  # u_bar
-# u_{n-1}: knot 0 of horizon n-1, due at t_m - T_s + D + T_s = t_m + D
-dot(D, Y["mpc"], filled=False, ms=3.0)
-txt(
-    D + 3,
-    Y["mpc"] + 0.2,
-    rf"${B}{{u}}_{{n-1}}={B}{{u}}_0^{{(n-1)}}$",
-    va="bottom",
-    ha="left",
-    color=pal.GRAY,
+# data flow into and out of the prediction
+flow((0, Y["js"] - 0.05), (0, Y["pred"] + 0.06))  # measurement
+flow((-3, Y["ctrl"] + H / 2), (D / 4, Y["pred"] - 0.16), rad=-0.1)  # u_bar
+flow((12, Y["ctrl"] + H / 2), (D + 10, Y["pred"] - 0.16), rad=-0.1)  # u_{n-1}
+flow((D + TS - 2, Y["pred"] - 0.12), (SOLVE + 1, Y["mpc"] + 0.15))  # x0_hat -> solve
+txt(D + TS - 12, 3.62, "initial state", fontsize=6.5, ha="left", va="top")
+# knot 0: x0_hat and u_0^(n) at the valves are the same instant
+ax.vlines(
+    D + TS, Y["valve"] + H / 2, Y["pred"] - 0.15, color=BLUE, lw=0.5, ls=":", zorder=1
 )
-flow((D, Y["mpc"] + 0.06), (D + 1, Y["pred"] - 0.16), color=pal.GRAY)
-flow(
-    (D + TS - 2, Y["pred"] - 0.12), (SOLVE + 1, Y["mpc"] + 0.12), rad=0.0
-)  # x0_hat -> solve
-txt(D + TS - 14, 2.64, "initial state", fontsize=6.5, ha="left", va="top")
+txt(D + TS + 2, 2.62, "knot 0", ha="left", color=BLUE, fontsize=6.5)
 
 ax.set_xlim(T0, T1)
-ax.set_ylim(0.4, 4.7)
+ax.set_ylim(0.55, 5.65)
 ax.set_yticks([])
 ax.spines[["left"]].set_visible(False)
 ax.set_xticks(np.arange(-60, T1, 60))
