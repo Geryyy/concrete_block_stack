@@ -33,7 +33,8 @@ but needs an X display (`$DISPLAY`); there is no xvfb in the container. `save()`
 | 2 (a, b) | `examples/fig_kinematics_pzs.py` | `data/crane_pzs100.urdf` + CAD meshes in `src/` | Blender line art + matplotlib overlay | ~2 min |
 | 4 (b) | `examples/fig_c3_validation.py` | `~/Documents/HydraulicCalib/bags` (read-only), `wiki/diagrams/hydraulic_calibration/c3_full_model.json`, code from `timber_crane_mujoco_py` | matplotlib | ~1 min with the bag cache, ~15 min first run (decodes into `~/.cache/crane_c3_bags`) |
 | 5 | `examples/fig_detector_stages.py` | `~/Documents/seibersdorf_dataset/<scan>` (read-only), `concrete_block_detector/config/detector.yaml`; runs the built `concrete_block_detector_snapshot_runner --dump-stages` (needs `colcon build --packages-select concrete_block_detector` on a branch with that flag) | matplotlib | ~10 s |
-| 8 | `examples/fig_timing_ocp.py` | deployed `crane_planning` Planner offline (first `example_wall` carry, 800 kg); ROS sourced for pinocchio/acados | matplotlib | ~10 s |
+| 7 | `examples/fig_planner_move.py` | same move (`examples/carry_move.py`): the planner's candidate corridors, executed TCP path, `Geometry.envelope` tube; ROS sourced | Blender line art | ~2 min |
+| 8 | `examples/fig_timing_ocp.py` | deployed `crane_planning` Planner offline, the move in `examples/carry_move.py` (first `example_wall` carry, 800 kg, staged blocks as scene); ROS sourced for pinocchio/acados | matplotlib | ~10 s |
 | 9 | `examples/fig_timing.py` | timing numbers from `wiki/mpc.md` (hard-coded: $D=T_s=60$ ms, 100 Hz) | matplotlib | seconds |
 | 11 (a–f) | `examples/fig_wall_sequence.py` | `example_wall` in `concrete_block_assembly_planning/config/wall_plans.yaml`, staging seed `world_model_seed_pick_place.yaml`, T_world_K0 | Blender line art | ~6 min |
 

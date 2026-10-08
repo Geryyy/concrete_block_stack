@@ -209,6 +209,15 @@ class Robot:
                 frontier.append(j.child)
         return out
 
+    def subtree(self, joint: str) -> set[str]:
+        """Links moved by `joint`: its child and everything below."""
+        links, frontier = set(), [self.joints[joint].child]
+        while frontier:
+            link = frontier.pop()
+            links.add(link)
+            frontier += [j.child for j in self.joints.values() if j.parent == link]
+        return links
+
     def values(self, q, chains: bool = True) -> dict[str, float]:
         """Every movable joint value: canonical q + mimics + closed cylinder chains."""
         if isinstance(q, dict):

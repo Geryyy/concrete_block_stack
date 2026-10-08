@@ -1,21 +1,21 @@
 """
-Fig. 7 (paper draft): the Fig. 8 carry in task space -- candidate corridors, the selected
-curve and its sway envelope, over the crane line art.
+Fig. 7 (paper draft): the Fig. 8 carry in task space, candidates and sway bound.
 
 Candidates are crane_planning's own deterministic set for this request (geometry
 `cartesian_candidates` + the joint line), tried in order; the first that lifts, fits and
-certifies is taken. The tube is `Geometry.envelope` (how far the carried point can swing
-inside q_sway_max) around the executed TCP path. Move and scene: carry_move.py.
+certifies is taken. Clearance (geometry `_decide`): hanging pose >= margins + envelope
+passes at once, else the swinging half (below the tip hinge) is swept over the sway box
++-q_sway_max. Drawn: that swinging half ghosted at one hinge's limits, at the goal pose.
+Move and scene: carry_move.py.
 
-    python3 examples/fig_planner_move.py out [dpi] [look]
+    python3 examples/fig_planner_move.py out [dpi] [look] [tip|tilt]
 """
 
 import sys
 from pathlib import Path
 
 import numpy as np
-import vtk
-from cbs_figures import GROUND_Z, Scene
+from cbs_figures import Scene
 from cbs_figures import palette as pal
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -38,9 +38,16 @@ print(plan.message)
 model, config = planner.model, planner.config
 payload = Payload(mass_kg=cm.MASS, valid=True)
 offset = settled_offset(model, payload, cm.TOOL)
-geometry = Geometry(model, planner.limits.relaxed_to(start.q_a),
-                    planner.prepare_scene(cm.scene(), True), config, cm.TOOL,
-                    payload_parameters(payload), None, offset(start.q_a))
+geometry = Geometry(
+    model,
+    planner.limits.relaxed_to(start.q_a),
+    planner.prepare_scene(cm.scene(), True),
+    config,
+    cm.TOOL,
+    payload_parameters(payload),
+    None,
+    offset(start.q_a),
+)
 
 
 def tcp(q):
@@ -57,8 +64,10 @@ for a in np.linspace(0, 1, 40):
     q[[4, 5]] = model.passive_equilibrium(q[[0, 1, 2, 3, 6, 7]])
     joint_line.append(tcp(q))
 executed = np.array([tcp(q) for q in plan.q])
-print(f"{len(candidates) + 1} candidates; envelope {geometry.envelope:.3f} m; "
-      f"required clearance {geometry.required:.3f} m")
+print(
+    f"{len(candidates) + 1} candidates; envelope {geometry.envelope:.3f} m; "
+    f"required clearance {geometry.required:.3f} m"
+)
 
 s = Scene(look=look)
 k8 = s.robot.fk(plan.q[-1])["K8_tool_center_point"][:3, 3]
@@ -71,35 +80,66 @@ for x, y in cm.STAGED:
     s.block((x, y, cm.BLOCK_Z, np.pi))
 s.block((*cm.PLACE[:2], cm.BLOCK_Z, np.pi), style="ghost")  # slot c0_b0, still empty
 
-# sway envelope: a tube of radius envelope around the executed TCP path
-line = vtk.vtkPolyLineSource()
-line.SetNumberOfPoints(len(executed))
-for i, p in enumerate(executed):
-    line.SetPoint(i, *p)
-tube = vtk.vtkTubeFilter()
-tube.SetInputConnection(line.GetOutputPort())
-tube.SetRadius(geometry.envelope)
-tube.SetNumberOfSides(32)
-tube.CappingOn()
-tri = vtk.vtkTriangleFilter()
-tri.SetInputConnection(tube.GetOutputPort())
-tri.Update()
-s.mesh(tri.GetOutput(), color=pal.WASH, style="ghost")
+HINGE = {"tip": (4, "theta6_tip_joint"), "tilt": (5, "theta7_tilt_joint")}
+hinge = sys.argv[4] if len(sys.argv) > 4 else "tip"
+k, joint = HINGE[hinge]
+bound = float(config.q_sway_max[k - 4])
+goal_q = plan.q[-1]
 
 for c in candidates[1:]:  # corridors tried after the direct line
     s.path(np.array(c.positions_m), color=pal.MUTED, lw=0.5)
 s.path(np.array(joint_line), color=pal.MUTED, lw=0.5, ls=(0, (2, 1.5)))
 s.path(executed, color=pal.BLUE, lw=1.3)
-s.label(start_tcp, "start", offset=(-24, 6))
-s.label(cm.PLACE, "goal", offset=(8, 8))
-top = max(np.array(c.positions_m)[:, 2].max() for c in candidates)
+s.label(start_tcp, "start", offset=(-26, 10), leader=True)
+s.label(cm.PLACE, "goal", offset=(26, 18), leader=True)
 corner = np.array(candidates[-1].positions_m)[2]
 s.label(corner, "candidate corridors", offset=(-30, 16), leader=True)
-s.label(executed[len(executed) // 3], "selected: direct tool line", offset=(-34, -26),
-        leader=True)
-s.label(executed[2 * len(executed) // 3] + [0, 0, -geometry.envelope],
-        "sway envelope", offset=(30, -22), leader=True)
-AZ = float(sys.argv[4]) if len(sys.argv) > 4 else -34.0
-s.camera(azimuth=AZ, elevation=24)
+s.label(
+    executed[len(executed) // 3],
+    "selected: direct tool line",
+    offset=(-34, -26),
+    leader=True,
+)
+s.label(executed[-1] + [0, 0, -1.2], "(b)", offset=(26, -20), leader=True)
+s.camera(azimuth=-34, elevation=28)  # side-on to the move
 for ext in ("pdf", "svg", "png"):
     s.save(f"{out}/fig_planner_move.{ext}", width="onehalf", aspect=0.62, dpi=dpi)
+
+# (b) detail: the swinging half (below the tip hinge) at goal, seen along the hinge axis,
+# at rest and at the hinge's sway limits -- what the sweep certifies against the scene
+d = Scene(look=look)
+d.crane(goal_q, below="theta6_tip_joint")
+d.block_in_gripper(goal_q, color="block_active")
+for sign in (-1, 1):
+    q = goal_q.copy()
+    q[k] += sign * bound
+    d.crane(q, style="ghost", below="theta6_tip_joint")
+    d.block_in_gripper(q, style="ghost")
+pivot, axis = d.robot.joint_frame(joint, goal_q)
+low = d.robot.fk(goal_q)["K8_tool_center_point"][:3, 3] - [0, 0, 1.15]  # block bottom
+lever = low - pivot
+th = np.linspace(-bound, bound, 40)[:, None]  # Rodrigues about the hinge axis
+arc = (
+    pivot
+    + lever * np.cos(th)
+    + np.cross(axis, lever) * np.sin(th)
+    + axis * (axis @ lever) * (1 - np.cos(th))
+)
+d.path(arc, color=pal.INK, lw=0.6)
+for end in (arc[0], low, arc[-1]):
+    d.path(np.array([pivot, end]), color=pal.INK, lw=0.5, ls=(0, (3, 2)))
+d.label(pivot, f"{hinge} hinge", offset=(18, 8), leader=True)
+d.label(arc[-1], rf"$\pm${np.degrees(bound):.1f}°", offset=(4, -8))
+view = (
+    axis
+    if axis @ np.array([np.cos(np.radians(-34)), np.sin(np.radians(-34)), 0]) > 0
+    else -axis
+)
+d.camera(
+    azimuth=np.degrees(np.arctan2(view[1], view[0])),
+    elevation=np.degrees(np.arcsin(np.clip(view[2], -1, 1))),
+    ortho=True,
+    margin=0.12,
+)
+for ext in ("pdf", "svg", "png"):
+    d.save(f"{out}/fig_planner_move_b.{ext}", width=55 / 25.4, aspect=1.25, dpi=dpi)

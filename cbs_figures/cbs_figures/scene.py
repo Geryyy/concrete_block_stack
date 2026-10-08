@@ -156,10 +156,13 @@ class Scene:
         st = dict(color=color, style=style, source=source)
         self._bodies.append((poly, np.asarray(T, float), st))
 
-    def crane(self, q, style: str = "solid"):
-        """Add the machine at configuration q (canonical eight)."""
+    def crane(self, q, style: str = "solid", below: str | None = None):
+        """Add the machine at configuration q (canonical eight); `below`: only that joint's subtree."""
         P = self.robot.fk(q)
+        links = self.robot.subtree(below) if below else None
         for v in self.robot.visuals:
+            if links is not None and v.link not in links:
+                continue
             if v.link.startswith(("K8_tool", "K9", "K10", "K11", "K12")):
                 c = "tool"
             elif "sensor_description" in v.mesh:

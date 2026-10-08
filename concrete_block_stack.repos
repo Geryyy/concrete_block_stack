@@ -7,11 +7,6 @@
 #
 # NOTE: the feat/jazzy branches below are LOCAL-ONLY -- not pushed, so a fresh
 # clone cannot resolve them yet. They carry the Gazebo Classic -> gz port.
-#
-# Dropped (issue 179): concrete_block_perception, concrete_block_perception_interfaces,
-# ros2_yolos_cpp, sam2_segmentation. The RGB path they served -- YOLO segment, mask cutout,
-# ICP registration -- is gone; concrete_block_detector answers every pose request now.
-# Existing checkouts under src/concrete_block_stack/ are not removed by this file.
 repositories:
   concrete_block_assembly_interfaces:
     type: git
