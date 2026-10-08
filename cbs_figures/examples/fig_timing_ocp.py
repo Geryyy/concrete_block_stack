@@ -1,67 +1,28 @@
 """
 Fig. 8 (paper draft): timing-OCP result of one carry move, the deployed Planner offline.
 
-Move: first `example_wall` carry, block 1 from its pickup approach to slot c0_b0's place
-approach (wall_plan_server.yaml: K0 z 3.0 -> 2.7 m; T_world_K0 as in fig_wall_sequence),
-tool yaw = block yaw + 90 deg, 800 kg payload (wall_assembly.xml). The start pose is the
-end of a plan to the pickup approach. Bounds come from crane_planning's plan_example.bounds,
+Move and scene: carry_move.py (shared with Fig. 7). Bounds come from crane_planning's plan_example.bounds,
 so every dashed line is one the solve used. Needs ROS sourced (pinocchio, acados).
 
     python3 examples/fig_timing_ocp.py out
 """
 
 import sys
-import time
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 from cbs_figures import palette as pal
 
-PLANNING = Path(__file__).resolve().parents[2] / "crane_planning"
-sys.path[:0] = [
-    str(PLANNING / "scripts"),
-    str(PLANNING),
-    str(PLANNING.parent / "crane_model"),
-]
+sys.path.insert(0, str(Path(__file__).parent))
+from carry_move import plan_carry  # noqa: E402  (puts crane_planning on sys.path)
 import plan_example as pe  # noqa: E402
-from crane_model import Payload  # noqa: E402
-from crane_planning import Planner, PlannerConfig, Start  # noqa: E402
-from crane_planning.planner import (  # noqa: E402
-    ACTUATED_INDICES,
-    PLANNED_INDICES,
-    TOOL_INDEX,
-)
 
 out = Path(sys.argv[1] if len(sys.argv) > 1 else "out")
 out.mkdir(exist_ok=True)
-PICK, PLACE = np.array([6.06, 0.35, 3.0]), np.array([8.06, 3.35, 2.7])  # TCP in K0, m
-YAW, MASS, TOOL = -np.pi / 2, 800.0, 0.3
 AXES = ("slew $q_1$", "boom $q_2$", "arm $q_3$", "telescope $q_4$", "rotator $q_7$")
 
-planner = Planner(pe.description(), PlannerConfig())
-q = np.zeros(8)
-q[list(PLANNED_INDICES)] = pe.DEFAULT_START
-q[TOOL_INDEX] = TOOL
-q[[4, 5]] = planner.model.passive_equilibrium(q[list(ACTUATED_INDICES)])
-to_pick = planner.plan(
-    Start(q=q, dq_a=np.zeros(5)),
-    PICK,
-    YAW,
-    payload=None,
-    scene=[],
-    avoid_collisions=True,
-)
-started = time.monotonic()
-plan = planner.plan(
-    Start(q=to_pick.q[-1].copy(), dq_a=np.zeros(5)),
-    PLACE,
-    YAW,
-    payload=Payload(mass_kg=MASS, valid=True),
-    scene=[],
-    avoid_collisions=True,
-)
-call = time.monotonic() - started
+planner, _start, plan, call = plan_carry()
 print(plan.message)
 print(
     f"planner call {call:.2f} s = geometry {call - plan.timing.solve_time_s:.2f} s"
