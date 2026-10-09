@@ -37,6 +37,7 @@ but needs an X display (`$DISPLAY`); there is no xvfb in the container. `save()`
 | 7 | `examples/fig_planner_move.py` | same move (`examples/carry_move.py`): executed TCP path, sway box swept along it (shaded), (b) swing extremes at goal; ROS sourced | Blender line art | ~2 min |
 | 8 | `examples/fig_timing_ocp.py` | deployed `crane_planning` Planner offline, the move in `examples/carry_move.py` (first `example_wall` carry, 800 kg, staged blocks as scene); ROS sourced for pinocchio/acados | matplotlib | ~10 s |
 | 9 | `examples/fig_timing.py` | timing numbers from `wiki/mpc.md` (hard-coded: $D=T_s=60$ ms, 100 Hz) | matplotlib | seconds |
+| 10 | `examples/fig_bt.py` | `concrete_block_behavior_tree/behavior_trees/*.xml`: curated node list, each node names its XML IDs and the script fails if one is gone | matplotlib | seconds |
 | 11 (a–f) | `examples/fig_wall_sequence.py` | `example_wall` in `concrete_block_assembly_planning/config/wall_plans.yaml`, staging seed `world_model_seed_pick_place.yaml`, T_world_K0 | Blender line art | ~6 min |
 
 Each writes `.png` (wiki, preview) and `.svg` (Inkscape); Fig. 2 also `.pdf`. Fig. 4a (block
