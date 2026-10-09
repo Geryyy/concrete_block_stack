@@ -32,8 +32,10 @@ but needs an X display (`$DISPLAY`); there is no xvfb in the container. `save()`
 |---|---|---|---|---|
 | 2 (a, b) | `examples/fig_kinematics_pzs.py` | `data/crane_pzs100.urdf` + CAD meshes in `src/` | Blender line art + matplotlib overlay | ~2 min |
 | 3 | `examples/fig_overview.py` | block diagram after the ICRA26 overview; components and rates from paper §3-§8 | matplotlib | seconds |
+| 4 (a) | `examples/fig_c3_block.py` | C3 law from paper §4.3 (hard-coded block diagram, Fig. 3 style) | matplotlib | seconds |
 | 4 (b) | `examples/fig_c3_validation.py` | `~/Documents/HydraulicCalib/bags` (read-only), `wiki/diagrams/hydraulic_calibration/c3_full_model.json`, code from `timber_crane_mujoco_py` | matplotlib | ~1 min with the bag cache, ~15 min first run (decodes into `~/.cache/crane_c3_bags`) |
 | 5 | `examples/fig_detector_stages.py` | `~/Documents/seibersdorf_dataset/<scan>` (read-only), `concrete_block_detector/config/detector.yaml`; runs the built `concrete_block_detector_snapshot_runner --dump-stages` (needs `colcon build --packages-select concrete_block_detector` on a branch with that flag) | matplotlib | ~10 s |
+| 6 | `examples/fig_world_model.py` | illustrative world-model state on `example_wall` (Fig. 11 poses): placed, free, grasped (FK) blocks, plan goals, lidar sight lines | Blender line art | ~2 min |
 | 7 | `examples/fig_planner_move.py` | same move (`examples/carry_move.py`): executed TCP path, sway box swept along it (shaded), (b) swing extremes at goal; ROS sourced | Blender line art | ~2 min |
 | 8 | `examples/fig_timing_ocp.py` | deployed `crane_planning` Planner offline, the move in `examples/carry_move.py` (first `example_wall` carry, 800 kg, staged blocks as scene); ROS sourced for pinocchio/acados | matplotlib | ~10 s |
 | 9 | `examples/fig_timing.py` | timing numbers from `wiki/mpc.md` (hard-coded: $D=T_s=60$ ms, 100 Hz) | matplotlib | seconds |
