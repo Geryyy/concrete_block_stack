@@ -42,7 +42,7 @@ fig, axs = plt.subplots(
 )
 ax_s, ax_v, ax_q, ax_p, ax_u = axs
 
-ax_s.plot(t, tr.sigma, color=pal.INK)
+ax_s.plot(t, tr.s, color=pal.INK)
 ax_s.set_ylabel("$s$")
 ax_s.set_ylim(-0.05, 1.05)
 
