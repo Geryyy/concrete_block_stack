@@ -40,6 +40,16 @@ SLOTS = [
 ]
 CARRIED = 3
 
+
+def tint(hex_, a=0.3):
+    """Hue mixed into white: a pale fill that line art still reads."""
+    rgb = np.array([int(hex_[k : k + 2], 16) for k in (1, 3, 5)])
+    return "#%02X%02X%02X" % tuple(np.round(255 - a * (255 - rgb)).astype(int))
+
+
+# task status -> fill: categorical hues, pale (the labels name the state too)
+STATE = {"FREE": tint(pal.VIOLET), "MOVE": tint(pal.OCHRE), "PLACED": tint(pal.TEAL)}
+
 s = Scene(look=look)
 tcp = (STAGED[CARRIED] + SLOTS[CARRIED]) / 2 + [0, 0, GRIP + LIFT]
 q = s.robot.reach(
@@ -47,12 +57,12 @@ q = s.robot.reach(
 )
 s.ground(margin=10)
 s.crane(q)
-s.block_in_gripper(q, color="block_active")
+s.block_in_gripper(q, color=STATE["MOVE"])
 for i in range(3):
-    s.block((*SLOTS[i], YAW))
+    s.block((*SLOTS[i], YAW), color=STATE["PLACED"])
 for i in (3, 4):
     s.block((*SLOTS[i], YAW), style="ghost")
-s.block((*STAGED[4], YAW))
+s.block((*STAGED[4], YAW), color=STATE["FREE"])
 
 lidar = s.link_center("seyond", q)
 for target in (SLOTS[1] + [0, 0, 0.3], STAGED[4] + [0, 0, 0.3]):
@@ -62,7 +72,7 @@ B = r"\mathbf"
 held = s.robot.fk(q)["K8_tool_center_point"][:3, 3] - [0, 0, 0.85]
 s.label(
     held,
-    "grasped: FK-tracked\n"
+    "grasped: MOVE, FK-tracked\n"
     + rf"${B}{{H}}_0^\mathrm{{B}}={B}{{H}}_0^\mathrm{{T}}({B}{{q}})\,{B}{{H}}_\mathrm{{T}}^\mathrm{{B}}$",
     offset=(30, 18),
     leader=True,
@@ -71,7 +81,7 @@ s.label(
     SLOTS[4] + [0, 0, 0.3], "wall plan goal (empty slot)", offset=(34, -8), leader=True
 )
 s.label(
-    SLOTS[0] + [0, 0, 0.3], "placed: lidar pose, PLACED", offset=(24, -26), leader=True
+    SLOTS[0] + [0, 0, 0.3], "placed: PLACED, lidar pose", offset=(24, -26), leader=True
 )
 s.label(STAGED[4] + [0, 0, 0.3], "detected: FREE", offset=(-30, -20), leader=True)
 s.label(lidar, r"lidar $\mathcal{K}_\mathrm{L}$", offset=(-30, 14), leader=True)
