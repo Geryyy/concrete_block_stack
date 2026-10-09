@@ -5,7 +5,8 @@ First `example_wall` carry: block 1 from its pickup approach to slot c0_b0's pla
 (wall_plan_server.yaml: K0 z 3.0 -> 2.7 m; T_world_K0 as in fig_wall_sequence), tool yaw =
 block yaw + 90 deg, 800 kg (wall_assembly.xml). Scene: the four other staged blocks as boxes
 (world_model_seed_pick_place.yaml), wall still empty. The start pose is the end of a plan to
-the pickup approach. Needs ROS sourced (pinocchio, acados).
+the pickup approach, pinned (START_Q): derived from plan_example's default start, it
+moved with that constant (231: 14 -> 39 SQP it.). Needs ROS sourced (pinocchio, acados).
 """
 
 import sys
@@ -24,11 +25,6 @@ import pinocchio as pin  # noqa: E402
 import plan_example as pe  # noqa: E402
 from crane_model import CollisionPrimitive, Payload  # noqa: E402
 from crane_planning import Planner, PlannerConfig, Start  # noqa: E402
-from crane_planning.planner import (  # noqa: E402
-    ACTUATED_INDICES,
-    PLANNED_INDICES,
-    TOOL_INDEX,
-)
 
 PICK, PLACE = np.array([6.06, 0.35, 3.0]), np.array([8.06, 3.35, 2.7])  # TCP in K0, m
 YAW, MASS, TOOL = -np.pi / 2, 800.0, 0.3
@@ -39,6 +35,8 @@ STAGED = [
     (4.06, 1.85),
     (6.06, 1.85),
 ]  # blocks 2..5, K0 x, y
+#: carry start: end of the plan to PICK from plan_example.DEFAULT_START as of 231 (q1..q8)
+START_Q = (0.057692, 0.937413, 0.433722, 0.594973, 0.202839, 1.563845, 1.628488, TOOL)
 BLOCK_Z = -0.8407  # K0 z of a ground block's centre (world 0.3 m)
 
 
@@ -57,21 +55,7 @@ def scene() -> list:
 def plan_carry():
     """(planner, start Start, plan, seconds of the carry call)."""
     planner = Planner(pe.description(), PlannerConfig())
-    q = np.zeros(8)
-    q[list(PLANNED_INDICES)] = pe.DEFAULT_START
-    q[TOOL_INDEX] = TOOL
-    q[[4, 5]] = planner.model.passive_equilibrium(q[list(ACTUATED_INDICES)])
-    # Only to get a start pose: from plan_example's low default it sweeps the staged
-    # blocks, so it is planned clear; the carry below is planned against the scene.
-    to_pick = planner.plan(
-        Start(q=q, dq_a=np.zeros(5)),
-        PICK,
-        YAW,
-        payload=None,
-        scene=[],
-        avoid_collisions=True,
-    )
-    start = Start(q=to_pick.q[-1].copy(), dq_a=np.zeros(5))
+    start = Start(q=np.array(START_Q), dq_a=np.zeros(5))
     began = time.monotonic()
     plan = planner.plan(
         start,

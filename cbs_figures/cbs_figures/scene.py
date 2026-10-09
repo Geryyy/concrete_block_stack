@@ -51,6 +51,21 @@ def _polydata(vertices: np.ndarray, faces: np.ndarray) -> vtk.vtkPolyData:
     return pd
 
 
+def _hull(p: np.ndarray) -> np.ndarray:
+    """2D convex hull, counter-clockwise (monotone chain)."""
+    p = p[np.lexsort(p.T[::-1])]
+
+    def half(pts):
+        h = []
+        for q in pts:
+            while len(h) > 1 and np.cross(h[-1] - h[-2], q - h[-2]) <= 0:
+                h.pop()
+            h.append(q)
+        return h[:-1]
+
+    return np.array(half(p) + half(p[::-1]))
+
+
 @lru_cache(maxsize=None)
 def _stl(path: str) -> vtk.vtkPolyData:
     r = vtk.vtkSTLReader()
@@ -271,6 +286,10 @@ class Scene:
         self._marks.append(
             ("path", np.atleast_2d(points), color, lw, ls, label, offset)
         )
+
+    def area(self, clouds, color=pal.WASH, alpha=0.45):
+        """Shade the union of the projected convex hulls of K0 point clouds (one alpha)."""
+        self._marks.append(("area", [np.atleast_2d(c) for c in clouds], color, alpha))
 
     def arrow(self, start, end, color=pal.INK, lw=1.0, label=None, offset=(4, 4)):
         self._marks.append(
@@ -576,6 +595,8 @@ class Scene:
                 pts.append(T[:3, 3] + np.vstack([np.zeros(3), length * T[:3, :3].T]))
             elif m[0] == "path":
                 pts.append(m[1])
+            elif m[0] == "area":
+                pts.extend(m[1])
             elif m[0] in ("arrow", "joint", "label"):
                 pts.append(np.atleast_2d(m[1]))
         return np.vstack(pts)
@@ -736,6 +757,19 @@ class Scene:
         uv = np.array([project(p) for p in points])
         ax.plot(uv[:, 0], uv[:, 1], color=color, lw=lw, ls=ls, solid_capstyle="round")
         self._text(ax, uv[-1], label, offset, color=pal.INK)
+
+    def _draw_area(self, ax, project, clouds, color, alpha):
+        # all hulls counter-clockwise in one path: the nonzero fill rule unions them
+        verts, codes = [], []
+        for c in clouds:
+            h = _hull(np.array([project(p) for p in c]))
+            verts += [*h, h[0]]
+            codes += (
+                [MplPath.MOVETO] + [MplPath.LINETO] * (len(h) - 1) + [MplPath.CLOSEPOLY]
+            )
+        ax.add_patch(
+            PathPatch(MplPath(verts, codes), fc=color, alpha=alpha, lw=0, zorder=0.5)
+        )
 
     def _draw_arrow(self, ax, project, start, end, color, lw, label, offset):
         a, b = project(start), project(end)

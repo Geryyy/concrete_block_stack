@@ -12,11 +12,11 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 from cbs_figures import palette as pal
 
 sys.path.insert(0, str(Path(__file__).parent))
-import plan_example as pe  # noqa: E402
-from carry_move import plan_carry  # noqa: E402  (puts crane_planning on sys.path)
+from carry_move import pe, plan_carry  # noqa: E402  (puts crane_planning on sys.path)
 
 out = Path(sys.argv[1] if len(sys.argv) > 1 else "out")
 out.mkdir(exist_ok=True)
