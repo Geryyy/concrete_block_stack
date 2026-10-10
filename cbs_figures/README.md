@@ -22,6 +22,8 @@ but needs an X display (`$DISPLAY`); there is no xvfb in the container. `save()`
 
 ## Paper figures — how to redo them
 
+Approach and conventions: `wiki/implementation/paper_figures.md`.
+
 ```bash
 ./make_paper_figures.sh                 # all, final: 600 dpi, Blender line art -> wiki/diagrams/aic/
 ./make_paper_figures.sh preview         # all, 150 dpi VTK "cad" look into out/, no Blender, seconds
@@ -42,8 +44,8 @@ but needs an X display (`$DISPLAY`); there is no xvfb in the container. `save()`
 | 10 | `examples/fig_bt.py` | `concrete_block_behavior_tree/behavior_trees/*.xml`: curated node list, each node names its XML IDs and the script fails if one is gone | matplotlib | seconds |
 | 11 (a–f) | `examples/fig_wall_sequence.py` | `example_wall` in `concrete_block_assembly_planning/config/wall_plans.yaml`, staging seed `world_model_seed_pick_place.yaml`, T_world_K0 | Blender line art | ~6 min |
 
-Each writes `.png` (wiki, preview) and `.svg` (Inkscape); Fig. 2 also `.pdf`. Fig. 4a (block
-diagram) and Inkscape touch-ups are manual and **lost on regeneration** — keep a note of
+Each writes `.png` (wiki, preview) and `.svg` (Inkscape); Fig. 2 also `.pdf`. Inkscape touch-ups
+are manual and **lost on regeneration** — keep a note of
 them in the figure's wiki entry. Change a pose, camera or label in the script, not in
 the SVG, when it should survive the next run. If the plan, URDF or C3 fit changes, rerun the
 matching line; the wiki entry names the script, so a figure is never orphaned.
